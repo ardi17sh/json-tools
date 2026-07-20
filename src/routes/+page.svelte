@@ -122,7 +122,7 @@
 
 <div class="app">
 	<header>
-		<h1>JSON Beautifier</h1>
+		<h1>JSON Formatter</h1>
 		<div class="controls">
 			<label>
 				Indent:

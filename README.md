@@ -1,6 +1,6 @@
-# JSON Beautifier
+# JSON Tools
 
-A fast, privacy-focused JSON beautifier that runs entirely in the browser. Paste JSON, get it formatted instantly with an interactive tree view — no data ever leaves your machine.
+A fast, privacy-focused collection of JSON utilities that run entirely in the browser — JSON formatting, TypeScript type generation, and more. No data ever leaves your machine.
 
 Built with **SvelteKit 5** and deployed as a static site (~140 KB).
 
@@ -92,7 +92,7 @@ Cloudflare will build and deploy automatically on every push to the connected br
 npm run build
 
 # Upload to Cloudflare Pages via Wrangler CLI
-npx wrangler pages deploy build --project-name=json-beautifier
+npx wrangler pages deploy build --project-name=json-tools
 ```
 
 On first run, Wrangler will prompt you to authenticate and create the project if it doesn't exist.
@@ -142,7 +142,7 @@ The site is served via **nginx** on `http://localhost:8080`.
 ## Project Structure
 
 ```
-json-beautifier/
+json-tools/
 ├── src/
 │   ├── routes/
 │   │   ├── +layout.js          # Prerender config

@@ -8,8 +8,8 @@
 </script>
 
 <svelte:head>
-	<title>JSON Beautifier</title>
-	<meta name="description" content="Paste JSON and get it beautifully formatted. No data stored." />
+	<title>JSON Tools</title>
+	<meta name="description" content="A collection of browser-based JSON utilities: formatter, TypeScript type generator, and more. No data stored." />
 </svelte:head>
 
 <div class="app-shell">
