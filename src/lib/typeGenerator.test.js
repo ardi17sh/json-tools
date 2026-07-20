@@ -28,3 +28,25 @@ describe('generateType - primitives', () => {
     expect(result).toBe('null');
   });
 });
+
+describe('generateType - arrays', () => {
+  it('should generate array with shorthand syntax', () => {
+    const result = generateType([1, 2, 3], { arraySyntax: 'shorthand' });
+    expect(result).toBe('number[]');
+  });
+
+  it('should generate array with generic syntax', () => {
+    const result = generateType([1, 2, 3], { arraySyntax: 'generic' });
+    expect(result).toBe('Array<number>');
+  });
+
+  it('should generate string array', () => {
+    const result = generateType(['a', 'b'], { arraySyntax: 'shorthand' });
+    expect(result).toBe('string[]');
+  });
+
+  it('should handle empty array', () => {
+    const result = generateType([], { arraySyntax: 'shorthand' });
+    expect(result).toBe('unknown[]');
+  });
+});
