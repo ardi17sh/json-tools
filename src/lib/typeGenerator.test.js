@@ -50,3 +50,33 @@ describe('generateType - arrays', () => {
     expect(result).toBe('unknown[]');
   });
 });
+
+describe('generateType - inline objects', () => {
+  it('should generate inline object type', () => {
+    const value = { name: 'John', age: 30 };
+    const options = { arraySyntax: 'shorthand', indent: 2 };
+    const result = generateType(value, options);
+    expect(result).toBe(`{
+  name: string;
+  age: number;
+}`);
+  });
+
+  it('should handle nested objects inline', () => {
+    const value = { user: { name: 'John' } };
+    const options = { arraySyntax: 'shorthand', indent: 2 };
+    const result = generateType(value, options);
+    expect(result).toBe(`{
+  user: {
+    name: string;
+  };
+}`);
+  });
+
+  it('should handle empty object', () => {
+    const value = {};
+    const options = { arraySyntax: 'shorthand', indent: 2 };
+    const result = generateType(value, options);
+    expect(result).toBe('{}');
+  });
+});
