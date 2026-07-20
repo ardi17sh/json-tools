@@ -18,6 +18,14 @@
 
 		try {
 			parsed = JSON.parse(input);
+			// Auto-detect stringified JSON and un-stringify it
+			while (typeof parsed === 'string') {
+				try {
+					parsed = JSON.parse(parsed);
+				} catch {
+					break;
+				}
+			}
 		} catch (e) {
 			error = e.message;
 		}
@@ -214,24 +222,10 @@
 {/snippet}
 
 <style>
-	:global(*) {
-		margin: 0;
-		padding: 0;
-		box-sizing: border-box;
-	}
-
-	:global(body) {
-		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-		background: #1a1b26;
-		color: #c0caf5;
-		min-height: 100vh;
-	}
-
 	.app {
-		max-width: 1400px;
-		margin: 0 auto;
-		padding: 1.5rem;
-		min-height: 100vh;
+		width: 100%;
+		padding: 1rem 1.5rem;
+		flex: 1;
 		display: flex;
 		flex-direction: column;
 	}
@@ -239,7 +233,7 @@
 	header {
 		display: flex;
 		justify-content: space-between;
-		align-items: center;
+		align-items: flex-start;
 		margin-bottom: 1.5rem;
 		flex-wrap: wrap;
 		gap: 1rem;
@@ -255,6 +249,7 @@
 		display: flex;
 		align-items: center;
 		gap: 1rem;
+		flex-wrap: wrap;
 	}
 
 	label {
@@ -380,6 +375,7 @@
 		line-height: 1.6;
 		overflow: auto;
 		min-height: 500px;
+		color: #c0caf5;
 	}
 
 	/* Tree styles */

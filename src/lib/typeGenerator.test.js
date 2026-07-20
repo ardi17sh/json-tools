@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { generateType } from './typeGenerator';
+import { generateType, generateExtractedTypes } from './typeGenerator';
 
 describe('TypeScript Type Generator', () => {
   it('should pass initial test', () => {
@@ -78,5 +78,36 @@ describe('generateType - inline objects', () => {
     const options = { arraySyntax: 'shorthand', indent: 2 };
     const result = generateType(value, options);
     expect(result).toBe('{}');
+  });
+});
+
+describe('generateExtractedTypes', () => {
+  it('should extract nested objects', () => {
+    const value = { user: { name: 'John', age: 30 } };
+    const options = { 
+      typeConstruct: 'interface', 
+      rootName: 'Root',
+      arraySyntax: 'shorthand',
+      indent: 2
+    };
+    const result = generateExtractedTypes(value, options);
+    expect(result).toContain('interface Root {');
+    expect(result).toContain('user: User;');
+    expect(result).toContain('interface User {');
+    expect(result).toContain('name: string;');
+    expect(result).toContain('age: number;');
+  });
+
+  it('should use type construct when specified', () => {
+    const value = { user: { name: 'John' } };
+    const options = { 
+      typeConstruct: 'type', 
+      rootName: 'Root',
+      arraySyntax: 'shorthand',
+      indent: 2
+    };
+    const result = generateExtractedTypes(value, options);
+    expect(result).toContain('type Root =');
+    expect(result).toContain('type User =');
   });
 });
