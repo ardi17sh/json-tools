@@ -1,7 +1,10 @@
-<script>
+<script lang="ts">
 	import { page } from '$app/stores';
-	let { children } = $props();
-	const navItems = [
+	import type { Snippet } from 'svelte';
+
+	let { children }: { children: Snippet } = $props();
+
+	const navItems: { href: string; label: string }[] = [
 		{ href: '/', label: 'JSON Formatter' },
 		{ href: '/type-generator', label: 'Type Generator' }
 	];
