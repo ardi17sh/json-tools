@@ -1,29 +1,26 @@
-/**
- * @param {string} str
- */
-function capitalize(str) {
+function capitalize(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-/**
- * @param {string} key
- */
-function toTypeName(key) {
+function toTypeName(key: string): string {
   return capitalize(key.replace(/[^a-zA-Z0-9]/g, ""));
 }
 
-/**
- * @typedef {{ arraySyntax: 'shorthand' | 'generic', indent: number }} TypeOptions
- * @typedef {{ typeConstruct?: 'interface' | 'type', rootName?: string } & TypeOptions} ExtractOptions
- */
+export interface TypeOptions {
+  arraySyntax: 'shorthand' | 'generic';
+  indent: number;
+}
 
-/**
- * @param {unknown} value
- * @param {TypeOptions} options
- * @param {number} [depth]
- * @returns {string}
- */
-function generateInlineType(value, options, depth = 0) {
+export interface ExtractOptions extends TypeOptions {
+  typeConstruct?: 'interface' | 'type';
+  rootName?: string;
+}
+
+function generateInlineType(
+  value: unknown,
+  options: TypeOptions,
+  depth: number = 0
+): string {
   const indent = " ".repeat(options.indent * depth);
   const innerIndent = " ".repeat(options.indent * (depth + 1));
 
@@ -45,9 +42,7 @@ function generateInlineType(value, options, depth = 0) {
   }
 
   if (typeof value === "object") {
-    const entries = Object.entries(
-      /** @type {Record<string, unknown>} */ (value),
-    );
+    const entries = Object.entries(value as Record<string, unknown>);
     if (entries.length === 0) return "{}";
 
     const properties = entries.map(([key, val]) => {
@@ -61,33 +56,26 @@ function generateInlineType(value, options, depth = 0) {
   throw new Error("Unsupported type");
 }
 
-/**
- * @param {unknown} value
- * @param {TypeOptions} options
- * @param {number} [depth]
- * @returns {string}
- */
-export function generateType(value, options, depth = 0) {
+export function generateType(
+  value: unknown,
+  options: TypeOptions,
+  depth: number = 0
+): string {
   return generateInlineType(value, options, depth);
 }
 
-/**
- * @param {unknown} value
- * @param {ExtractOptions} options
- * @returns {string}
- */
-export function generateExtractedTypes(value, options) {
-  /** @type {string[]} */
-  const interfaces = [];
+export function generateExtractedTypes(
+  value: unknown,
+  options: ExtractOptions
+): string {
+  const interfaces: string[] = [];
   const construct = options.typeConstruct || "interface";
 
-  /**
-   * @param {unknown} val
-   * @param {string} name
-   * @param {ExtractOptions} opts
-   * @returns {string}
-   */
-  function extract(val, name, opts) {
+  function extract(
+    val: unknown,
+    name: string,
+    opts: ExtractOptions
+  ): string {
     if (val === null || typeof val !== "object") {
       return generateInlineType(val, opts);
     }
@@ -104,9 +92,7 @@ export function generateExtractedTypes(value, options) {
         : `Array<${elementType}>`;
     }
 
-    const entries = Object.entries(
-      /** @type {Record<string, unknown>} */ (val),
-    );
+    const entries = Object.entries(val as Record<string, unknown>);
     if (entries.length === 0) return "{}";
 
     const innerIndent = " ".repeat(opts.indent);

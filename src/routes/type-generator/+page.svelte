@@ -1,18 +1,19 @@
-<script>
-	import { generateType, generateExtractedTypes } from '$lib/typeGenerator.js';
+<script lang="ts">
+	import { generateType, generateExtractedTypes } from '$lib/typeGenerator';
+	import type { ExtractOptions } from '$lib/typeGenerator';
 
 	let input = $state('');
-	let parsed = $state(null);
+	let parsed = $state<unknown>(null);
 	let error = $state('');
 	let copied = $state(false);
 
-	let typeConstruct = $state('interface');
-	let arraySyntax = $state('shorthand');
+	let typeConstruct = $state<'interface' | 'type'>('interface');
+	let arraySyntax = $state<'shorthand' | 'generic'>('shorthand');
 	let rootName = $state('Root');
 	let indent = $state(2);
 	let extractNested = $state(true);
 
-		const placeholder = 'Paste JSON here, e.g. {"name": "John", "age": 30}';
+	const placeholder: string = 'Paste JSON here, e.g. {"name": "John", "age": 30}';
 
 	function parse() {
 		error = '';
@@ -30,17 +31,17 @@
 					break;
 				}
 			}
-		} catch (e) {
-			error = e.message;
+		} catch (e: unknown) {
+			error = e instanceof Error ? e.message : String(e);
 		}
 	}
 
-	function handleInput(e) {
-		input = e.target.value;
+	function handleInput(e: Event) {
+		input = (e.target as HTMLTextAreaElement).value;
 		parse();
 	}
 
-	function getOptions() {
+	function getOptions(): ExtractOptions {
 		return {
 			typeConstruct,
 			arraySyntax,
@@ -49,7 +50,7 @@
 		};
 	}
 
-	function getOutput() {
+	function getOutput(): string {
 		if (parsed === null) return '';
 		const options = getOptions();
 		try {
@@ -71,7 +72,7 @@
 		}
 	}
 
-	async function copyOutput() {
+	async function copyOutput(): Promise<void> {
 		const text = getOutput();
 		if (!text) return;
 		try {
