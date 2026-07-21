@@ -134,7 +134,7 @@
   </main>
 </div>
 
-{#snippet JsonNode(value: unknown, path: string, depth: number)}
+{#snippet JsonNode(value: unknown, path: string, depth: number, label?: string)}
   {#if isCollapsible(value)}
     {@const isArr = Array.isArray(value)}
     {@const entries = isArr ? (value as unknown[]).map((v, i) => [i, v]) : Object.entries(value as Record<string, unknown>)}
@@ -144,6 +144,10 @@
     <div class="block">
       <div class="opener">
         <button class="toggle" type="button" onclick={() => toggle(path)} aria-label={isCollapsed ? 'Expand' : 'Collapse'}>{isCollapsed ? '▶' : '▼'}</button>
+        {#if label}
+          <span class="key">{label}</span>
+          <span class="colon">:&nbsp;</span>
+        {/if}
         <span class="bracket">{open}</span>
         {#if isCollapsed}
           <span class="collapsed-hint">&nbsp;{entries.length} {isArr ? 'items' : 'keys'}&nbsp;</span>
@@ -154,7 +158,7 @@
         <div class="children">
           {#each entries as [key, val], i}
             {#if isCollapsible(val)}
-              {@render JsonNode(val, `${path}.${key}`, depth + 1)}
+              {@render JsonNode(val, `${path}.${key}`, depth + 1, isArr ? String(key) : `"${key}"`)}
             {:else}
               {@const fmt = formatValue(val)}
               <div class="leaf">
@@ -176,6 +180,11 @@
   {:else}
     {@const fmt = formatValue(value)}
     <div class="leaf">
+      {#if label}
+        <span class="gutter"></span>
+        <span class="key">{label}</span>
+        <span class="colon">:&nbsp;</span>
+      {/if}
       <span class={fmt.cls}>{fmt.text}</span>
     </div>
   {/if}
@@ -220,22 +229,26 @@
     min-height: 0;
   }
 
-  .tree {
+  :global(.tree) {
     white-space: nowrap;
+  }
+
+  :global(.block) {
+    display: block;
   }
 
   :root {
     --gutter: 1.5rem;
   }
 
-  .opener,
-  .closer,
-  .leaf {
+  :global(.opener),
+  :global(.closer),
+  :global(.leaf) {
     display: flex;
     align-items: baseline;
   }
 
-  .toggle {
+  :global(.toggle) {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -253,56 +266,56 @@
     transition: color 0.1s, background 0.1s;
   }
 
-  .toggle:hover {
+  :global(.toggle:hover) {
     color: var(--color-primary);
     background: var(--color-bg-secondary);
   }
 
-  .gutter {
+  :global(.gutter) {
     display: inline-block;
     width: var(--gutter);
     flex-shrink: 0;
   }
 
-  .children {
+  :global(.children) {
     padding-left: var(--gutter);
   }
 
-  .bracket {
+  :global(.bracket) {
     color: var(--color-json-string);
   }
 
-  .collapsed-hint {
+  :global(.collapsed-hint) {
     color: var(--color-text-dim);
     font-style: italic;
     font-size: 0.8rem;
   }
 
-  .key {
+  :global(.key) {
     color: var(--color-primary);
   }
 
-  .colon {
+  :global(.colon) {
     color: var(--color-text-muted);
   }
 
-  .comma {
+  :global(.comma) {
     color: var(--color-text-muted);
   }
 
-  .json-string {
+  :global(.json-string) {
     color: var(--color-json-string);
   }
 
-  .json-number {
+  :global(.json-number) {
     color: var(--color-json-number);
   }
 
-  .json-bool {
+  :global(.json-bool) {
     color: var(--color-json-bool);
   }
 
-  .json-null {
+  :global(.json-null) {
     color: var(--color-json-null);
   }
 
