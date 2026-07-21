@@ -1,10 +1,10 @@
-<script>
+<script lang="ts">
 	let input = $state('');
-	let parsed = $state(null);
+	let parsed = $state<unknown>(null);
 	let error = $state('');
 	let indent = $state(2);
 	let copied = $state(false);
-	let collapsed = $state(new Set());
+	let collapsed = $state<Set<string>>(new Set());
 
 	function beautify() {
 		error = '';
@@ -26,21 +26,21 @@
 					break;
 				}
 			}
-		} catch (e) {
-			error = e.message;
+		} catch (e: unknown) {
+			error = e instanceof Error ? e.message : String(e);
 		}
 	}
 
-	function handleInput(e) {
-		input = e.target.value;
+	function handleInput(e: Event) {
+		input = (e.target as HTMLTextAreaElement).value;
 		beautify();
 	}
 
-	function handleIndentChange(e) {
-		indent = Number(e.target.value);
+	function handleIndentChange(e: Event) {
+		indent = Number((e.target as HTMLSelectElement).value);
 	}
 
-	function getOutput() {
+	function getOutput(): string {
 		if (parsed === null) return '';
 		const space = indent === 0 ? '\t' : indent;
 		return JSON.stringify(parsed, null, space);
@@ -73,7 +73,7 @@
 		collapsed = new Set();
 	}
 
-	function toggle(path) {
+	function toggle(path: string) {
 		const next = new Set(collapsed);
 		if (next.has(path)) {
 			next.delete(path);
@@ -84,18 +84,18 @@
 	}
 
 	function collapseAll() {
-		const paths = new Set();
+		const paths = new Set<string>();
 		if (parsed !== null && typeof parsed === 'object') {
 			collectPaths(parsed, 'root');
 		}
 		collapsed = paths;
 
-		function collectPaths(val, path) {
+		function collectPaths(val: unknown, path: string) {
 			if (val && typeof val === 'object') {
 				paths.add(path);
 				const entries = Array.isArray(val)
 					? val.map((v, i) => [i, v])
-					: Object.entries(val);
+					: Object.entries(val as Record<string, unknown>);
 				for (const [k, v] of entries) {
 					collectPaths(v, `${path}.${k}`);
 				}
@@ -107,11 +107,11 @@
 		collapsed = new Set();
 	}
 
-	function isCollapsible(val) {
+	function isCollapsible(val: unknown): boolean {
 		return val !== null && typeof val === 'object';
 	}
 
-	function formatValue(val) {
+	function formatValue(val: unknown): { text: string; cls: string } {
 		if (val === null) return { text: 'null', cls: 'json-null' };
 		if (typeof val === 'boolean') return { text: String(val), cls: 'json-bool' };
 		if (typeof val === 'number') return { text: String(val), cls: 'json-number' };
@@ -174,10 +174,10 @@
 	</main>
 </div>
 
-{#snippet JsonNode(value, path, depth)}
+{#snippet JsonNode(value: unknown, path: string, depth: number)}
 	{#if isCollapsible(value)}
 		{@const isArr = Array.isArray(value)}
-		{@const entries = isArr ? value.map((v, i) => [i, v]) : Object.entries(value)}
+		{@const entries = isArr ? (value as unknown[]).map((v, i) => [i, v]) : Object.entries(value as Record<string, unknown>)}
 		{@const isCollapsed = collapsed.has(path)}
 		{@const open = isArr ? '[' : '{'}
 		{@const close = isArr ? ']' : '}'}
