@@ -33,13 +33,13 @@
 }
 
 /* Base reset */
-:global(*) {
+* {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
-:global(body) {
+body {
   font-family: var(--font-sans);
   background: var(--color-bg);
   color: var(--color-text);
@@ -47,7 +47,7 @@
 }
 
 /* Form controls */
-:global(button) {
+button {
   background: var(--color-bg-secondary);
   color: var(--color-text);
   border: 1px solid var(--color-border);
@@ -58,12 +58,12 @@
   transition: background 0.15s, border-color 0.15s;
 }
 
-:global(button:hover) {
+button:hover {
   background: var(--color-border-hover);
   border-color: var(--color-primary);
 }
 
-:global(select) {
+select {
   background: var(--color-bg-secondary);
   color: var(--color-text);
   border: 1px solid var(--color-border);
@@ -73,12 +73,12 @@
   cursor: pointer;
 }
 
-:global(select:focus) {
+select:focus {
   outline: none;
   border-color: var(--color-primary);
 }
 
-:global(label) {
+label {
   font-size: 0.875rem;
   color: var(--color-text-muted);
   display: flex;
@@ -86,7 +86,7 @@
   gap: var(--spacing-sm);
 }
 
-:global(.text-input) {
+.text-input {
   background: var(--color-bg-secondary);
   color: var(--color-text);
   border: 1px solid var(--color-border);
@@ -96,16 +96,16 @@
   width: 6rem;
 }
 
-:global(.text-input:focus) {
+.text-input:focus {
   outline: none;
   border-color: var(--color-primary);
 }
 
-:global(.checkbox-label) {
+.checkbox-label {
   cursor: pointer;
 }
 
-:global(.checkbox-label input[type='checkbox']) {
+.checkbox-label input[type='checkbox'] {
   accent-color: var(--color-primary);
   width: 0.9rem;
   height: 0.9rem;
@@ -113,7 +113,7 @@
 }
 
 /* Panel layout */
-:global(.panel) {
+.panel {
   display: flex;
   flex-direction: column;
   background: var(--color-bg-secondary);
@@ -122,7 +122,7 @@
   overflow: hidden;
 }
 
-:global(.panel-header) {
+.panel-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -131,7 +131,7 @@
   background: var(--color-bg-tertiary);
 }
 
-:global(.panel-header span) {
+.panel-header span {
   font-size: 0.8rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -139,14 +139,14 @@
   color: var(--color-text-muted);
 }
 
-:global(.panel-actions) {
+.panel-actions {
   display: flex;
   gap: var(--spacing-sm);
   align-items: center;
 }
 
 /* Input/Output areas */
-:global(.input-area) {
+.input-area {
   flex: 1;
   background: transparent;
   color: var(--color-text);
@@ -159,15 +159,15 @@
   min-height: 500px;
 }
 
-:global(.input-area:focus) {
+.input-area:focus {
   outline: none;
 }
 
-:global(.input-area::placeholder) {
+.input-area::placeholder {
   color: var(--color-text-dim);
 }
 
-:global(.output-area) {
+.output-area {
   flex: 1;
   padding: var(--spacing-md);
   font-family: var(--font-mono);
@@ -180,32 +180,32 @@
 }
 
 /* Feedback states */
-:global(.error) {
+.error {
   padding: var(--spacing-md);
   color: var(--color-error);
   font-size: 0.875rem;
   font-family: monospace;
 }
 
-:global(.copy-btn) {
+.copy-btn {
   font-size: 0.75rem;
   padding: 0.3rem 0.75rem;
 }
 
-:global(.copy-btn:disabled) {
+.copy-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
 
-:global(.small-btn) {
+.small-btn {
   font-size: 0.7rem;
   padding: 0.25rem 0.6rem;
 }
 
 /* Responsive */
 @media (max-width: 768px) {
-  :global(.input-area),
-  :global(.output-area) {
+  .input-area,
+  .output-area {
     min-height: 250px;
   }
 }
