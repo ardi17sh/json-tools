@@ -53,36 +53,15 @@
 
 **Interfaces:**
 - Produces: `export async function copyToClipboard(text: string): Promise<boolean>`
+  - Returns `true` on success, `false` on failure
+  - Attempts `navigator.clipboard.writeText` first, falls back to textarea + `document.execCommand('copy')`
 
 - [ ] **Step 1: Write failing test for successful clipboard copy**
 
-Create `src/lib/clipboard.test.ts`:
-
-```typescript
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { copyToClipboard } from './clipboard';
-
-describe('copyToClipboard', () => {
-  beforeEach(() => {
-    vi.stubGlobal('navigator', {
-      clipboard: {
-        writeText: vi.fn().mockResolvedValue(undefined)
-      }
-    });
-  });
-
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
-  it('should copy text using navigator.clipboard.writeText', async () => {
-    const result = await copyToClipboard('test text');
-    
-    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('test text');
-    expect(result).toBe(true);
-  });
-});
-```
+Create `src/lib/clipboard.test.ts` with a test that:
+- Stubs `navigator.clipboard.writeText` to resolve successfully
+- Calls `copyToClipboard('test text')`
+- Asserts `writeText` was called with `'test text'` and result is `true`
 
 - [ ] **Step 2: Run test to verify it fails**
 
@@ -92,32 +71,11 @@ Expected: FAIL with "Cannot find module './clipboard'"
 - [ ] **Step 3: Create clipboard utility**
 
 Create `src/lib/clipboard.ts`:
-
-```typescript
-export async function copyToClipboard(text: string): Promise<boolean> {
-  try {
-    await navigator.clipboard.writeText(text);
-    return true;
-  } catch {
-    // Fallback for environments where clipboard API is unavailable
-    const textarea = document.createElement('textarea');
-    textarea.value = text;
-    textarea.style.position = 'fixed';
-    textarea.style.opacity = '0';
-    document.body.appendChild(textarea);
-    textarea.select();
-    
-    try {
-      document.execCommand('copy');
-      document.body.removeChild(textarea);
-      return true;
-    } catch {
-      document.body.removeChild(textarea);
-      return false;
-    }
-  }
-}
-```
+- Export async function `copyToClipboard(text: string): Promise<boolean>`
+- Try block: call `navigator.clipboard.writeText(text)`, return `true`
+- Catch block: create a hidden textarea, set its value, append to body, select it, call `document.execCommand('copy')`, remove textarea, return `true`
+- If fallback also fails: remove textarea, return `false`
+- Handle the case where fallback `execCommand` also throws by wrapping it in its own try/catch
 
 - [ ] **Step 4: Run test to verify it passes**
 
@@ -126,26 +84,11 @@ Expected: PASS
 
 - [ ] **Step 5: Write failing test for fallback behavior**
 
-Add to `src/lib/clipboard.test.ts`:
-
-```typescript
-  it('should fallback to execCommand when clipboard API fails', async () => {
-    vi.stubGlobal('navigator', {
-      clipboard: {
-        writeText: vi.fn().mockRejectedValue(new Error('Clipboard unavailable'))
-      }
-    });
-
-    const execCommandSpy = vi.spyOn(document, 'execCommand').mockReturnValue(true);
-    
-    const result = await copyToClipboard('test text');
-    
-    expect(execCommandSpy).toHaveBeenCalledWith('copy');
-    expect(result).toBe(true);
-    
-    execCommandSpy.mockRestore();
-  });
-```
+Add a test that:
+- Stubs `navigator.clipboard.writeText` to reject
+- Mocks `document.createElement`, `document.body.appendChild`, `document.body.removeChild`, and `document.execCommand`
+- Calls `copyToClipboard('test text')`
+- Asserts `execCommand` was called with `'copy'` and result is `true`
 
 - [ ] **Step 6: Run test to verify fallback works**
 
@@ -168,47 +111,19 @@ git commit -m "feat: add clipboard utility with fallback"
 - Create: `src/lib/jsonParser.test.ts`
 
 **Interfaces:**
-- Consumes: Nothing
 - Produces: `export function parseJson(input: string): { data: unknown | null; error: string }`
+  - Returns `{ data: null, error: '' }` for empty/whitespace input
+  - Returns `{ data: parsed, error: '' }` on success
+  - Returns `{ data: null, error: message }` on failure
 
 - [ ] **Step 1: Write failing tests for basic parsing**
 
-Create `src/lib/jsonParser.test.ts`:
-
-```typescript
-import { describe, it, expect } from 'vitest';
-import { parseJson } from './jsonParser';
-
-describe('parseJson', () => {
-  it('should parse valid JSON', () => {
-    const result = parseJson('{"name":"John","age":30}');
-    
-    expect(result.data).toEqual({ name: 'John', age: 30 });
-    expect(result.error).toBe('');
-  });
-
-  it('should return error for invalid JSON', () => {
-    const result = parseJson('{invalid}');
-    
-    expect(result.data).toBeNull();
-    expect(result.error).toBeTruthy();
-  });
-
-  it('should return empty result for empty input', () => {
-    const result = parseJson('');
-    
-    expect(result.data).toBeNull();
-    expect(result.error).toBe('');
-  });
-
-  it('should return empty result for whitespace-only input', () => {
-    const result = parseJson('   ');
-    
-    expect(result.data).toBeNull();
-    expect(result.error).toBe('');
-  });
-});
-```
+Create `src/lib/jsonParser.test.ts` with tests that:
+- Parses valid JSON object `'{"name":"John","age":30}'` — expects `data` to equal the parsed object and `error` to be empty
+- Parses valid JSON array `'[1, 2, 3]'` — expects correct array
+- Returns error for invalid JSON `'{invalid}'` — expects `data` null and `error` truthy
+- Returns empty result for empty string `''` — expects `data` null and `error` empty string
+- Returns empty result for whitespace-only `'   \n\t  '` — expects `data` null and `error` empty string
 
 - [ ] **Step 2: Run test to verify it fails**
 
@@ -218,59 +133,28 @@ Expected: FAIL with "Cannot find module './jsonParser'"
 - [ ] **Step 3: Create JSON parser utility**
 
 Create `src/lib/jsonParser.ts`:
-
-```typescript
-export function parseJson(input: string): { data: unknown | null; error: string } {
-  const trimmed = input.trim();
-  
-  if (!trimmed) {
-    return { data: null, error: '' };
-  }
-
-  try {
-    let parsed: unknown = JSON.parse(trimmed);
-    
-    // Auto-detect stringified JSON and parse recursively
-    while (typeof parsed === 'string') {
-      try {
-        parsed = JSON.parse(parsed);
-      } catch {
-        break;
-      }
-    }
-    
-    return { data: parsed, error: '' };
-  } catch (e: unknown) {
-    const message = e instanceof Error ? e.message : String(e);
-    return { data: null, error: message };
-  }
-}
-```
+- Trim the input, return `{ data: null, error: '' }` if empty after trim
+- Try block: `JSON.parse` the trimmed input
+- While loop: while `typeof parsed === 'string'`, try to `JSON.parse` again (handles double-stringified JSON)
+- Return `{ data: parsed, error: '' }` on success
+- Catch block: extract error message using `e instanceof Error ? e.message : String(e)`, return `{ data: null, error: message }`
 
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `npm test -- src/lib/jsonParser.test.ts`
-Expected: PASS (all 4 tests pass)
+Expected: PASS (all 5 tests pass)
 
 - [ ] **Step 5: Write failing test for auto-detect stringified JSON**
 
-Add to `src/lib/jsonParser.test.ts`:
-
-```typescript
-  it('should auto-detect and parse stringified JSON', () => {
-    const stringified = JSON.stringify({ name: 'John' });
-    const doubleStringified = JSON.stringify(stringified);
-    const result = parseJson(doubleStringified);
-    
-    expect(result.data).toEqual({ name: 'John' });
-    expect(result.error).toBe('');
-  });
-```
+Add a test that:
+- Creates a double-stringified JSON: `JSON.stringify(JSON.stringify({ name: 'John' }))`
+- Calls `parseJson` with it
+- Expects `data` to equal `{ name: 'John' }` and `error` to be empty
 
 - [ ] **Step 6: Run test to verify auto-detect works**
 
 Run: `npm test -- src/lib/jsonParser.test.ts`
-Expected: PASS (all 5 tests pass)
+Expected: PASS (all 6 tests pass)
 
 - [ ] **Step 7: Commit**
 
@@ -287,226 +171,26 @@ git commit -m "feat: add JSON parser utility with auto-detect"
 - Create: `src/styles/global.css`
 
 **Interfaces:**
-- Consumes: Nothing
 - Produces: CSS custom properties and shared classes for entire app
 
 - [ ] **Step 1: Create global.css with design tokens and shared styles**
 
-Create `src/styles/global.css`:
+Create `src/styles/global.css` with:
 
-```css
-:root {
-  /* Colors */
-  --color-bg: #1a1b26;
-  --color-bg-secondary: #24283b;
-  --color-bg-tertiary: #1f2335;
-  --color-border: #3b4261;
-  --color-border-hover: #4a5280;
-  --color-text: #c0caf5;
-  --color-text-muted: #9aa5ce;
-  --color-text-dim: #565f89;
-  --color-primary: #7aa2f7;
-  --color-error: #f7768e;
+**Design tokens (`:root`):**
+- Colors: `--color-bg` (#1a1b26), `--color-bg-secondary` (#24283b), `--color-bg-tertiary` (#1f2335), `--color-border` (#3b4261), `--color-border-hover` (#4a5280), `--color-text` (#c0caf5), `--color-text-muted` (#9aa5ce), `--color-text-dim` (#565f89), `--color-primary` (#7aa2f7), `--color-error` (#f7768e)
+- JSON syntax colors: `--color-json-string` (#9ece6a), `--color-json-number` (#ff9e64), `--color-json-bool` (#bb9af7), `--color-json-null` (#f7768e)
+- Spacing: `--spacing-xs` (0.25rem), `--spacing-sm` (0.5rem), `--spacing-md` (1rem), `--spacing-lg` (1.5rem)
+- Typography: `--font-sans`, `--font-mono`
+- Border radius: `--radius-sm` (6px), `--radius-md` (10px)
 
-  /* JSON syntax colors */
-  --color-json-string: #9ece6a;
-  --color-json-number: #ff9e64;
-  --color-json-bool: #bb9af7;
-  --color-json-null: #f7768e;
-
-  /* Spacing */
-  --spacing-xs: 0.25rem;
-  --spacing-sm: 0.5rem;
-  --spacing-md: 1rem;
-  --spacing-lg: 1.5rem;
-
-  /* Typography */
-  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
-
-  /* Border radius */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-}
-
-/* Base styles */
-:global(body) {
-  font-family: var(--font-sans);
-  background: var(--color-bg);
-  color: var(--color-text);
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-:global(*) {
-  box-sizing: border-box;
-}
-
-/* Form controls */
-button {
-  background: var(--color-bg-secondary);
-  color: var(--color-text);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  padding: 0.4rem 1rem;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
-}
-
-button:hover {
-  background: var(--color-border-hover);
-  border-color: var(--color-primary);
-}
-
-select {
-  background: var(--color-bg-secondary);
-  color: var(--color-text);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  padding: 0.4rem 0.6rem;
-  font-size: 0.875rem;
-  cursor: pointer;
-}
-
-select:focus {
-  outline: none;
-  border-color: var(--color-primary);
-}
-
-label {
-  font-size: 0.875rem;
-  color: var(--color-text-muted);
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-}
-
-.text-input {
-  background: var(--color-bg-secondary);
-  color: var(--color-text);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  padding: 0.4rem 0.6rem;
-  font-size: 0.875rem;
-  width: 6rem;
-}
-
-.text-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-}
-
-.checkbox-label {
-  cursor: pointer;
-}
-
-.checkbox-label input[type='checkbox'] {
-  accent-color: var(--color-primary);
-  width: 0.9rem;
-  height: 0.9rem;
-  cursor: pointer;
-}
-
-/* Panel layout */
-.panel {
-  display: flex;
-  flex-direction: column;
-  background: var(--color-bg-secondary);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border);
-  overflow: hidden;
-}
-
-.panel-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.75rem var(--spacing-md);
-  border-bottom: 1px solid var(--color-border);
-  background: var(--color-bg-tertiary);
-}
-
-.panel-header span {
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--color-text-muted);
-}
-
-.panel-actions {
-  display: flex;
-  gap: var(--spacing-sm);
-  align-items: center;
-}
-
-/* Input/Output areas */
-.input-area {
-  flex: 1;
-  background: transparent;
-  color: var(--color-text);
-  border: none;
-  padding: var(--spacing-md);
-  font-family: var(--font-mono);
-  font-size: 0.875rem;
-  line-height: 1.6;
-  resize: none;
-  min-height: 500px;
-}
-
-.input-area:focus {
-  outline: none;
-}
-
-.input-area::placeholder {
-  color: var(--color-text-dim);
-}
-
-.output-area {
-  flex: 1;
-  padding: var(--spacing-md);
-  font-family: var(--font-mono);
-  font-size: 0.875rem;
-  line-height: 1.6;
-  overflow: auto;
-  min-height: 500px;
-  color: var(--color-text);
-  margin: 0;
-}
-
-/* Feedback states */
-.error {
-  padding: var(--spacing-md);
-  color: var(--color-error);
-  font-size: 0.875rem;
-  font-family: monospace;
-}
-
-.copy-btn {
-  font-size: 0.75rem;
-  padding: 0.3rem 0.75rem;
-}
-
-.copy-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.small-btn {
-  font-size: 0.7rem;
-  padding: 0.25rem 0.6rem;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .input-area,
-  .output-area {
-    min-height: 250px;
-  }
-}
-```
+**Shared classes (using `:global()` prefix):**
+- Base: `body` (font, background, color, margin, padding, box-sizing), `*` (box-sizing)
+- Form controls: `button`, `select`, `label`, `.text-input`, `.checkbox-label` — all using CSS custom properties
+- Panel layout: `.panel`, `.panel-header`, `.panel-header span`, `.panel-actions`
+- Inputs/outputs: `.input-area`, `.input-area:focus`, `.input-area::placeholder`, `.output-area`
+- Feedback: `.error`, `.copy-btn`, `.copy-btn:disabled`, `.small-btn`
+- Responsive: media query at 768px for `.input-area` and `.output-area` min-height
 
 - [ ] **Step 2: Commit**
 
@@ -526,46 +210,18 @@ git commit -m "feat: add global.css with design tokens and shared styles"
 - Consumes: `copyToClipboard` from `$lib/clipboard`
 - Produces: Self-contained button component
 
+**Props:** `text: string`, `disabled?: boolean` (default `false`)
+
+**Behavior:**
+- Imports `copyToClipboard` from `$lib/clipboard`
+- Internal `$state` for `copied` (boolean, default `false`)
+- `handleClick()`: if text is empty or disabled, return early. Call `copyToClipboard(text)`. If successful, set `copied = true` and reset to `false` after 2000ms via `setTimeout`
+- Button with class `copy-btn`, calls `handleClick` on click, respects `disabled` prop
+- Shows "✓ Copied!" when `copied` is true, "Copy" otherwise
+
 - [ ] **Step 1: Create CopyButton.svelte**
 
-Create `src/lib/components/CopyButton.svelte`:
-
-```svelte
-<script lang="ts">
-  import { copyToClipboard } from '$lib/clipboard';
-
-  interface Props {
-    text: string;
-    disabled?: boolean;
-  }
-
-  let { text, disabled = false }: Props = $props();
-
-  let copied = $state(false);
-
-  async function handleClick() {
-    if (!text || disabled) return;
-    
-    const success = await copyToClipboard(text);
-    if (success) {
-      copied = true;
-      setTimeout(() => (copied = false), 2000);
-    }
-  }
-</script>
-
-<button
-  class="copy-btn"
-  onclick={handleClick}
-  {disabled}
->
-  {#if copied}
-    ✓ Copied!
-  {:else}
-    Copy
-  {/if}
-</button>
-```
+Create the component with the above behavior using Svelte 5 runes syntax.
 
 - [ ] **Step 2: Commit**
 
@@ -585,27 +241,17 @@ git commit -m "feat: add CopyButton component"
 - Consumes: Nothing (uses global CSS)
 - Produces: Two-way bindable textarea component
 
+**Props:** `value?: string` (default `''`, bindable), `placeholder?: string` (default `''`)
+
+**Behavior:**
+- Renders a `<textarea>` with class `input-area`
+- Uses `bind:value` for two-way binding with parent
+- Uses `bind:placeholder` for placeholder text
+- Sets `spellcheck="false"`
+
 - [ ] **Step 1: Create JsonInput.svelte**
 
-Create `src/lib/components/JsonInput.svelte`:
-
-```svelte
-<script lang="ts">
-  interface Props {
-    value?: string;
-    placeholder?: string;
-  }
-
-  let { value = $bindable(''), placeholder = '' }: Props = $props();
-</script>
-
-<textarea
-  class="input-area"
-  bind:value
-  {placeholder}
-  spellcheck="false"
-></textarea>
-```
+Create the component with the above behavior using Svelte 5 runes syntax with `$bindable`.
 
 - [ ] **Step 2: Commit**
 
@@ -625,35 +271,16 @@ git commit -m "feat: add JsonInput component"
 - Consumes: Nothing (uses global CSS)
 - Produces: Container component with title and slots
 
+**Props:** `title: string`, `actions?: Snippet`, `children: Snippet`
+
+**Behavior:**
+- Renders a `<div class="panel">` container
+- Header: `<div class="panel-header">` with `<span>` for title, and optionally `<div class="panel-actions">` if `actions` slot is provided
+- Body: renders the `children` slot
+
 - [ ] **Step 1: Create Panel.svelte**
 
-Create `src/lib/components/Panel.svelte`:
-
-```svelte
-<script lang="ts">
-  import type { Snippet } from 'svelte';
-
-  interface Props {
-    title: string;
-    actions?: Snippet;
-    children: Snippet;
-  }
-
-  let { title, actions, children }: Props = $props();
-</script>
-
-<div class="panel">
-  <div class="panel-header">
-    <span>{title}</span>
-    {#if actions}
-      <div class="panel-actions">
-        {@render actions()}
-      </div>
-    {/if}
-  </div>
-  {@render children()}
-</div>
-```
+Create the component with the above behavior. Use `Snippet` type from `'svelte'`. Only render the actions wrapper `{#if actions}` when the slot is provided.
 
 - [ ] **Step 2: Commit**
 
@@ -672,331 +299,19 @@ git commit -m "feat: add Panel component"
 **Interfaces:**
 - Consumes: `Panel`, `JsonInput`, `CopyButton` components; `parseJson` utility
 
-- [ ] **Step 1: Refactor +page.svelte to use shared components**
+**What changes:**
+- **Import** `Panel`, `JsonInput`, `CopyButton` from `$lib/components/` and `parseJson` from `$lib/jsonParser`
+- **Replace** the manual JSON parsing logic (try/catch/while loop) with a `$effect` that watches `input` and calls `parseJson(input)`, updating `parsed` and `error` accordingly
+- **Replace** the inline textarea with `<JsonInput bind:value={input} placeholder="Paste your JSON here..." />` inside a `<Panel title="Input">`
+- **Replace** the manual output panel with `<Panel title="Output">` containing an `actions` snippet with Collapse All, Expand All, and `<CopyButton>`
+- **Replace** the manual copy logic — the `<CopyButton>` component handles it internally via the `text={getOutput()}` prop
+- **Replace** all hardcoded CSS values with CSS custom properties (`var(--color-*)`, `var(--spacing-*)`, `var(--radius-*)`)
+- **Remove** all duplicated CSS rules that are now in `global.css` (panel styles, input-area, output-area, error, button, select, label, copy-btn, small-btn, etc.)
+- **Keep** page-specific CSS: tree view styles (`.tree`, `.opener`, `.closer`, `.leaf`, `.toggle`, `.gutter`, `.children`, `.bracket`, `.collapsed-hint`, `.key`, `.colon`, `.comma`), JSON syntax color classes, and responsive layout
 
-Replace the content of `src/routes/+page.svelte` with:
+- [ ] **Step 1: Refactor +page.svelte**
 
-```svelte
-<script lang="ts">
-  import Panel from '$lib/components/Panel.svelte';
-  import JsonInput from '$lib/components/JsonInput.svelte';
-  import CopyButton from '$lib/components/CopyButton.svelte';
-  import { parseJson } from '$lib/jsonParser';
-
-  let input = $state('');
-  let parsed = $state<unknown>(null);
-  let error = $state('');
-  let indent = $state(2);
-  let collapsed = $state<Set<string>>(new Set());
-
-  $effect(() => {
-    if (!input.trim()) {
-      parsed = null;
-      error = '';
-      collapsed = new Set();
-      return;
-    }
-
-    const result = parseJson(input);
-    if (result.error) {
-      error = result.error;
-      parsed = null;
-    } else {
-      error = '';
-      parsed = result.data;
-    }
-    collapsed = new Set();
-  });
-
-  function handleIndentChange(e: Event) {
-    indent = Number((e.target as HTMLSelectElement).value);
-  }
-
-  function getOutput(): string {
-    if (parsed === null) return '';
-    const space = indent === 0 ? '\t' : indent;
-    return JSON.stringify(parsed, null, space);
-  }
-
-  function clearAll() {
-    input = '';
-    parsed = null;
-    error = '';
-    collapsed = new Set();
-  }
-
-  function toggle(path: string) {
-    const next = new Set(collapsed);
-    if (next.has(path)) {
-      next.delete(path);
-    } else {
-      next.add(path);
-    }
-    collapsed = next;
-  }
-
-  function collapseAll() {
-    const paths = new Set<string>();
-    if (parsed !== null && typeof parsed === 'object') {
-      collectPaths(parsed, 'root');
-    }
-    collapsed = paths;
-
-    function collectPaths(val: unknown, path: string) {
-      if (val && typeof val === 'object') {
-        paths.add(path);
-        const entries = Array.isArray(val)
-          ? val.map((v, i) => [i, v])
-          : Object.entries(val as Record<string, unknown>);
-        for (const [k, v] of entries) {
-          collectPaths(v, `${path}.${k}`);
-        }
-      }
-    }
-  }
-
-  function expandAll() {
-    collapsed = new Set();
-  }
-
-  function isCollapsible(val: unknown): boolean {
-    return val !== null && typeof val === 'object';
-  }
-
-  function formatValue(val: unknown): { text: string; cls: string } {
-    if (val === null) return { text: 'null', cls: 'json-null' };
-    if (typeof val === 'boolean') return { text: String(val), cls: 'json-bool' };
-    if (typeof val === 'number') return { text: String(val), cls: 'json-number' };
-    if (typeof val === 'string') return { text: `"${val}"`, cls: 'json-string' };
-    return { text: String(val), cls: '' };
-  }
-</script>
-
-<div class="app">
-  <header>
-    <h1>JSON Formatter</h1>
-    <div class="controls">
-      <label>
-        Indent:
-        <select value={indent} onchange={handleIndentChange}>
-          <option value={2}>2 spaces</option>
-          <option value={4}>4 spaces</option>
-          <option value={0}>Tab (\t)</option>
-        </select>
-      </label>
-      <button onclick={clearAll}>Clear</button>
-    </div>
-  </header>
-
-  <main>
-    <Panel title="Input">
-      <JsonInput bind:value={input} placeholder="Paste your JSON here..." />
-    </Panel>
-
-    <Panel title="Output">
-      {#snippet actions()}
-        {#if parsed !== null}
-          <button class="small-btn" onclick={collapseAll}>Collapse All</button>
-          <button class="small-btn" onclick={expandAll}>Expand All</button>
-        {/if}
-        <CopyButton text={getOutput()} disabled={parsed === null} />
-      {/snippet}
-
-      {#if error}
-        <div class="error">{error}</div>
-      {:else if parsed !== null}
-        <div class="output-area tree">
-          {@render JsonNode(parsed, 'root', 0)}
-        </div>
-      {/if}
-    </Panel>
-  </main>
-</div>
-
-{#snippet JsonNode(value: unknown, path: string, depth: number)}
-  {#if isCollapsible(value)}
-    {@const isArr = Array.isArray(value)}
-    {@const entries = isArr ? (value as unknown[]).map((v, i) => [i, v]) : Object.entries(value as Record<string, unknown>)}
-    {@const isCollapsed = collapsed.has(path)}
-    {@const open = isArr ? '[' : '{'}
-    {@const close = isArr ? ']' : '}'}
-    <div class="block">
-      <div class="opener">
-        <button class="toggle" type="button" onclick={() => toggle(path)} aria-label={isCollapsed ? 'Expand' : 'Collapse'}>{isCollapsed ? '▶' : '▼'}</button>
-        <span class="bracket">{open}</span>
-        {#if isCollapsed}
-          <span class="collapsed-hint">&nbsp;{entries.length} {isArr ? 'items' : 'keys'}&nbsp;</span>
-          <span class="bracket">{close}</span>
-        {/if}
-      </div>
-      {#if !isCollapsed}
-        <div class="children">
-          {#each entries as [key, val], i}
-            {#if isCollapsible(val)}
-              {@render JsonNode(val, `${path}.${key}`, depth + 1)}
-            {:else}
-              {@const fmt = formatValue(val)}
-              <div class="leaf">
-                <span class="gutter"></span>
-                <span class="key">{isArr ? key : `"${key}"`}</span>
-                <span class="colon">:&nbsp;</span>
-                <span class={fmt.cls}>{fmt.text}</span>
-                <span class="comma">{i < entries.length - 1 ? ',' : ''}</span>
-              </div>
-            {/if}
-          {/each}
-        </div>
-        <div class="closer">
-          <span class="gutter"></span>
-          <span class="bracket">{close}</span>
-        </div>
-      {/if}
-    </div>
-  {:else}
-    {@const fmt = formatValue(value)}
-    <div class="leaf">
-      <span class={fmt.cls}>{fmt.text}</span>
-    </div>
-  {/if}
-{/snippet}
-
-<style>
-  .app {
-    width: 100%;
-    padding: var(--spacing-md) var(--spacing-lg);
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-  }
-
-  header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: var(--spacing-lg);
-    flex-wrap: wrap;
-    gap: var(--spacing-md);
-  }
-
-  h1 {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: var(--color-primary);
-  }
-
-  .controls {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-md);
-    flex-wrap: wrap;
-  }
-
-  main {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--spacing-md);
-    flex: 1;
-    min-height: 0;
-  }
-
-  .tree {
-    white-space: nowrap;
-  }
-
-  :root {
-    --gutter: 1.5rem;
-  }
-
-  .opener,
-  .closer,
-  .leaf {
-    display: flex;
-    align-items: baseline;
-  }
-
-  .toggle {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: var(--gutter);
-    height: 1.25rem;
-    flex-shrink: 0;
-    background: none;
-    border: none;
-    border-radius: 3px;
-    cursor: pointer;
-    user-select: none;
-    color: var(--color-text-dim);
-    font-size: 0.6rem;
-    padding: 0;
-    transition: color 0.1s, background 0.1s;
-  }
-
-  .toggle:hover {
-    color: var(--color-primary);
-    background: var(--color-bg-secondary);
-  }
-
-  .gutter {
-    display: inline-block;
-    width: var(--gutter);
-    flex-shrink: 0;
-  }
-
-  .children {
-    padding-left: var(--gutter);
-  }
-
-  .bracket {
-    color: var(--color-json-string);
-  }
-
-  .collapsed-hint {
-    color: var(--color-text-dim);
-    font-style: italic;
-    font-size: 0.8rem;
-  }
-
-  .key {
-    color: var(--color-primary);
-  }
-
-  .colon {
-    color: var(--color-text-muted);
-  }
-
-  .comma {
-    color: var(--color-text-muted);
-  }
-
-  .json-string {
-    color: var(--color-json-string);
-  }
-
-  .json-number {
-    color: var(--color-json-number);
-  }
-
-  .json-bool {
-    color: var(--color-json-bool);
-  }
-
-  .json-null {
-    color: var(--color-json-null);
-  }
-
-  @media (max-width: 768px) {
-    main {
-      grid-template-columns: 1fr;
-    }
-
-    header {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-  }
-</style>
-```
+Rewrite the component using the shared components and utilities. Replace the `beautify()` function with the `$effect`-based `parseJson` pattern. Replace manual textarea and copy logic with `<JsonInput>` and `<CopyButton>`.
 
 - [ ] **Step 2: Run verification**
 
@@ -1020,197 +335,19 @@ git commit -m "refactor: JSON Formatter uses shared components and utilities"
 **Interfaces:**
 - Consumes: `Panel`, `JsonInput`, `CopyButton` components; `parseJson` utility; `generateType`, `generateExtractedTypes` from existing `typeGenerator.ts`
 
-- [ ] **Step 1: Refactor type-generator/+page.svelte to use shared components**
+**What changes:**
+- **Import** `Panel`, `JsonInput`, `CopyButton` from `$lib/components/`, `parseJson` from `$lib/jsonParser`, and `generateType`, `generateExtractedTypes` from `$lib/typeGenerator`
+- **Replace** the manual JSON parsing logic with a `$effect` that calls `parseJson(input)`
+- **Replace** the inline textarea with `<JsonInput bind:value={input} {placeholder} />` inside a `<Panel title="JSON Input">`
+- **Replace** the manual output panel with `<Panel title="TypeScript Output">` containing an `actions` snippet with `<CopyButton>`
+- **Replace** the manual copy logic — the `<CopyButton>` handles it internally
+- **Replace** all hardcoded CSS values with CSS custom properties
+- **Remove** all duplicated CSS rules now in `global.css`
+- **Keep** page-specific CSS: layout, header, controls, main grid, responsive
 
-Replace the content of `src/routes/type-generator/+page.svelte` with:
+- [ ] **Step 1: Refactor type-generator/+page.svelte**
 
-```svelte
-<script lang="ts">
-  import Panel from '$lib/components/Panel.svelte';
-  import JsonInput from '$lib/components/JsonInput.svelte';
-  import CopyButton from '$lib/components/CopyButton.svelte';
-  import { parseJson } from '$lib/jsonParser';
-  import { generateType, generateExtractedTypes } from '$lib/typeGenerator';
-  import type { ExtractOptions } from '$lib/typeGenerator';
-
-  let input = $state('');
-  let parsed = $state<unknown>(null);
-  let error = $state('');
-
-  let typeConstruct = $state<'interface' | 'type'>('interface');
-  let arraySyntax = $state<'shorthand' | 'generic'>('shorthand');
-  let rootName = $state('Root');
-  let indent = $state(2);
-  let extractNested = $state(true);
-
-  const placeholder = 'Paste JSON here, e.g. {"name": "John", "age": 30}';
-
-  $effect(() => {
-    if (!input.trim()) {
-      parsed = null;
-      error = '';
-      return;
-    }
-
-    const result = parseJson(input);
-    if (result.error) {
-      error = result.error;
-      parsed = null;
-    } else {
-      error = '';
-      parsed = result.data;
-    }
-  });
-
-  function getOptions(): ExtractOptions {
-    return {
-      typeConstruct,
-      arraySyntax,
-      rootName: rootName.trim() || 'Root',
-      indent
-    };
-  }
-
-  function getOutput(): string {
-    if (parsed === null) return '';
-    const options = getOptions();
-    try {
-      if (extractNested) {
-        return generateExtractedTypes(parsed, options);
-      }
-      const construct = options.typeConstruct;
-      const name = options.rootName;
-      const inlineType = generateType(parsed, options);
-      if (construct === 'type') {
-        return `type ${name} = ${inlineType}`;
-      }
-      if (inlineType.startsWith('{')) {
-        return `interface ${name} ${inlineType}`;
-      }
-      return `type ${name} = ${inlineType}`;
-    } catch {
-      return '';
-    }
-  }
-
-  function clearAll() {
-    input = '';
-    parsed = null;
-    error = '';
-  }
-</script>
-
-<svelte:head>
-  <title>Type Generator — JSON Tools</title>
-</svelte:head>
-
-<div class="app">
-  <header>
-    <h1>TypeScript Type Generator</h1>
-    <div class="controls">
-      <label>
-        Construct:
-        <select bind:value={typeConstruct}>
-          <option value="interface">interface</option>
-          <option value="type">type</option>
-        </select>
-      </label>
-      <label>
-        Arrays:
-        <select bind:value={arraySyntax}>
-          <option value="shorthand">T[]</option>
-          <option value="generic">Array&lt;T&gt;</option>
-        </select>
-      </label>
-      <label>
-        Root name:
-        <input type="text" bind:value={rootName} class="text-input" />
-      </label>
-      <label>
-        Indent:
-        <select bind:value={indent}>
-          <option value={2}>2 spaces</option>
-          <option value={4}>4 spaces</option>
-        </select>
-      </label>
-      <label class="checkbox-label">
-        <input type="checkbox" bind:checked={extractNested} />
-        Extract nested
-      </label>
-      <button onclick={clearAll}>Clear</button>
-    </div>
-  </header>
-
-  <main>
-    <Panel title="JSON Input">
-      <JsonInput bind:value={input} {placeholder} />
-    </Panel>
-
-    <Panel title="TypeScript Output">
-      {#snippet actions()}
-        <CopyButton text={getOutput()} disabled={parsed === null} />
-      {/snippet}
-
-      {#if error}
-        <div class="error">{error}</div>
-      {:else if parsed !== null}
-        <pre class="output-area">{getOutput()}</pre>
-      {/if}
-    </Panel>
-  </main>
-</div>
-
-<style>
-  .app {
-    width: 100%;
-    padding: var(--spacing-md) var(--spacing-lg);
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-  }
-
-  header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: var(--spacing-lg);
-    flex-wrap: wrap;
-    gap: var(--spacing-md);
-  }
-
-  h1 {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: var(--color-primary);
-  }
-
-  .controls {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-md);
-    flex-wrap: wrap;
-  }
-
-  main {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--spacing-md);
-    flex: 1;
-    min-height: 0;
-  }
-
-  @media (max-width: 768px) {
-    main {
-      grid-template-columns: 1fr;
-    }
-
-    header {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-  }
-</style>
-```
+Rewrite the component using the shared components and utilities. Replace the `parse()` function with `$effect`-based `parseJson` pattern. Replace manual textarea and copy logic.
 
 - [ ] **Step 2: Run verification**
 
@@ -1235,107 +372,22 @@ git commit -m "refactor: Type Generator uses shared components and utilities"
 - Consumes: `global.css`
 - Produces: Global styles applied to entire app
 
+**What changes:**
+- **Add** `import '../styles/global.css'` in the script block
+- **Remove** the `:global(*)` and `:global(body)` rules from the `<style>` block (now in global.css)
+- **Replace** all hardcoded color values in layout styles with CSS custom properties:
+  - `#1f2335` → `var(--color-bg-tertiary)`
+  - `#3b4261` → `var(--color-border)`
+  - `#7aa2f7` → `var(--color-primary)`
+  - `#9aa5ce` → `var(--color-text-muted)`
+  - `#c0caf5` → `var(--color-text)`
+  - `#24283b` → `var(--color-bg-secondary)`
+  - `6px` → `var(--radius-sm)`
+  - `1.5rem` → `var(--spacing-lg)`
+
 - [ ] **Step 1: Refactor +layout.svelte**
 
-Replace the content of `src/routes/+layout.svelte` with:
-
-```svelte
-<script lang="ts">
-  import { page } from '$app/stores';
-  import type { Snippet } from 'svelte';
-
-  let { children }: { children: Snippet } = $props();
-
-  const navItems: { href: string; label: string }[] = [
-    { href: '/', label: 'JSON Formatter' },
-    { href: '/type-generator', label: 'Type Generator' }
-  ];
-
-  // Import global styles
-  import '../styles/global.css';
-</script>
-
-<svelte:head>
-  <title>JSON Tools</title>
-  <meta name="description" content="A collection of browser-based JSON utilities: formatter, TypeScript type generator, and more. No data stored." />
-</svelte:head>
-
-<div class="app-shell">
-  <nav class="nav-bar">
-    <div class="nav-brand">JSON Tools</div>
-    <div class="nav-links">
-      {#each navItems as item}
-        <a
-          href={item.href}
-          class="nav-link"
-          class:active={$page.url.pathname === item.href}
-        >{item.label}</a>
-      {/each}
-    </div>
-  </nav>
-  <div class="app-content">
-    {@render children()}
-  </div>
-</div>
-
-<style>
-  .app-shell {
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-  }
-
-  .nav-bar {
-    display: flex;
-    align-items: center;
-    gap: 2rem;
-    padding: 0 var(--spacing-lg);
-    height: 3.25rem;
-    background: var(--color-bg-tertiary);
-    border-bottom: 1px solid var(--color-border);
-    flex-shrink: 0;
-  }
-
-  .nav-brand {
-    font-size: 0.95rem;
-    font-weight: 700;
-    color: var(--color-primary);
-    letter-spacing: -0.01em;
-  }
-
-  .nav-links {
-    display: flex;
-    gap: 0.25rem;
-  }
-
-  .nav-link {
-    padding: 0.4rem 0.85rem;
-    border-radius: var(--radius-sm);
-    font-size: 0.8rem;
-    font-weight: 500;
-    color: var(--color-text-muted);
-    text-decoration: none;
-    transition: color 0.15s, background 0.15s;
-  }
-
-  .nav-link:hover {
-    color: var(--color-text);
-    background: var(--color-bg-secondary);
-  }
-
-  .nav-link.active {
-    color: var(--color-text);
-    background: var(--color-bg-secondary);
-  }
-
-  .app-content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-  }
-</style>
-```
+Add the global CSS import and replace all hardcoded values with design tokens.
 
 - [ ] **Step 2: Run verification**
 
@@ -1414,7 +466,7 @@ Otherwise, no commit needed.
 
 All 10 tasks defined with:
 - Exact file paths
-- Complete code for each step
+- Detailed step-by-step instructions (no code — see spec/design doc for reference)
 - Exact commands with expected output
 - Frequent commits (one per task)
 - TDD where applicable (Tasks 1-2)
