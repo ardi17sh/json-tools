@@ -30,6 +30,9 @@
   /* Border radius */
   --radius-sm: 6px;
   --radius-md: 10px;
+
+  /* Tree gutter */
+  --gutter: 1.5rem;
 }
 
 /* Base reset */
@@ -185,6 +188,48 @@ label {
   color: var(--color-error);
   font-size: 0.875rem;
   font-family: monospace;
+}
+
+/* JSON tree */
+.block {
+  display: block;
+}
+
+.opener,
+.closer,
+.leaf {
+  display: flex;
+  align-items: baseline;
+}
+
+.collapsed-hint {
+  color: var(--color-text-dim);
+  font-style: italic;
+  font-size: 0.8rem;
+}
+
+.key {
+  color: var(--color-primary);
+}
+
+.colon {
+  color: var(--color-text-muted);
+}
+
+.json-string {
+  color: var(--color-json-string);
+}
+
+.json-number {
+  color: var(--color-json-number);
+}
+
+.json-bool {
+  color: var(--color-json-bool);
+}
+
+.json-null {
+  color: var(--color-json-null);
 }
 
 .copy-btn {

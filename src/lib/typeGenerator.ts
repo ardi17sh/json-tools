@@ -1,9 +1,10 @@
-function capitalize(str: string): string {
-  return str.charAt(0).toUpperCase() + str.slice(1);
+function toTypeName(key: string): string {
+  const cleaned = key.replace(/[^a-zA-Z0-9]/g, "");
+  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
 }
 
-function toTypeName(key: string): string {
-  return capitalize(key.replace(/[^a-zA-Z0-9]/g, ""));
+function arrayType(element: string, syntax: TypeOptions["arraySyntax"]): string {
+  return syntax === "shorthand" ? `${element}[]` : `Array<${element}>`;
 }
 
 export interface TypeOptions {
@@ -31,14 +32,10 @@ export function generateType(
 
   if (Array.isArray(value)) {
     if (value.length === 0) {
-      return options.arraySyntax === "shorthand"
-        ? "unknown[]"
-        : "Array<unknown>";
+      return arrayType("unknown", options.arraySyntax);
     }
     const elementType = generateType(value[0], options, depth);
-    return options.arraySyntax === "shorthand"
-      ? `${elementType}[]`
-      : `Array<${elementType}>`;
+    return arrayType(elementType, options.arraySyntax);
   }
 
   if (typeof value === "object") {
@@ -74,14 +71,10 @@ export function generateExtractedTypes(
 
     if (Array.isArray(val)) {
       if (val.length === 0) {
-        return opts.arraySyntax === "shorthand"
-          ? "unknown[]"
-          : "Array<unknown>";
+        return arrayType("unknown", opts.arraySyntax);
       }
       const elementType = extract(val[0], name + "Item", opts);
-      return opts.arraySyntax === "shorthand"
-        ? `${elementType}[]`
-        : `Array<${elementType}>`;
+      return arrayType(elementType, opts.arraySyntax);
     }
 
     const entries = Object.entries(val as Record<string, unknown>);
@@ -108,11 +101,7 @@ export function generateExtractedTypes(
       ) {
         const typeName = toTypeName(key) + "Item";
         extract(v[0], typeName, opts);
-        const arrayType =
-          opts.arraySyntax === "shorthand"
-            ? `${typeName}[]`
-            : `Array<${typeName}>`;
-        return `${innerIndent}${key}: ${arrayType};`;
+        return `${innerIndent}${key}: ${arrayType(typeName, opts.arraySyntax)};`;
       }
       const type = generateType(v, opts, 1);
       return `${innerIndent}${key}: ${type};`;

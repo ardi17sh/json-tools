@@ -1,0 +1,124 @@
+<script lang="ts">
+  import DiffNode from "./DiffNode.svelte";
+  import type { DiffNode as DiffNodeType } from "$lib/jsonDiff";
+  import { formatValue } from "$lib/formatValue";
+
+  const tones = [
+    "#e2c08d",
+    "#7aa2f7",
+    "#bb9af7",
+    "#73daca",
+    "#ff9e64",
+    "#db4b4b",
+  ];
+
+  let {
+    node,
+    side = "old",
+    depth = 0,
+  }: { node: DiffNodeType; side: "old" | "new"; depth?: number } = $props();
+
+  const isContainer = (val: unknown): boolean =>
+    val !== null && typeof val === "object";
+
+  const val = $derived(side === "old" ? node.oldValue : node.newValue);
+  const propCls = $derived.by(() => {
+    if (node.status === "added" && side === "new") return "diff-added";
+    if (node.status === "removed" && side === "old") return "diff-removed";
+    return "";
+  });
+  const statusCls = $derived(
+    propCls || (node.status === "changed" ? (side === "new" ? "diff-added" : "diff-removed") : ""),
+  );
+</script>
+
+{#if isContainer(val)}
+  {@const isArr = Array.isArray(val)}
+  {@const count = isArr
+    ? (val as unknown[]).length
+    : Object.keys(val as Record<string, unknown>).length}
+  {@const open = isArr ? "[" : "{"}
+  {@const close = isArr ? "]" : "}"}
+  {@const visible = (node.children ?? []).filter((c) =>
+    side === "old" ? c.status !== "added" : c.status !== "removed",
+  )}
+  {@const ordered = isArr
+    ? visible
+    : visible
+        .slice()
+        .sort(
+          (a, b) =>
+            Object.keys(val as Record<string, unknown>).indexOf(a.key) -
+            Object.keys(val as Record<string, unknown>).indexOf(b.key),
+        )}
+  <details class="block" open style:--bc={tones[depth % tones.length]}>
+      <summary class="opener {propCls}">
+        {#if node.key !== "root"}
+          <span class="key">{node.key}</span>
+          <span class="colon">:&nbsp;</span>
+        {/if}
+        <span class="bracket">{open}</span>
+        <span class="collapsed-hint"
+          >{count}
+          {isArr
+            ? count === 1
+              ? "item"
+              : "items"
+            : count === 1
+              ? "key"
+              : "keys"}</span
+        >
+        <span class="inline-close bracket">{close}</span>
+      </summary>
+      <div class="children">
+        {#each ordered as child, i (i)}
+          <DiffNode node={child} {side} depth={depth + 1} />
+        {/each}
+      </div>
+      <div class="closer">
+        <span class="bracket">{close}</span>
+      </div>
+    </details>
+  {:else}
+    <div class="leaf {statusCls}">
+      {#if node.key !== "root"}
+        <span class="key">{node.key}</span>
+        <span class="colon">:&nbsp;</span>
+      {/if}
+      <span class={formatValue(val).cls}>{formatValue(val).text}</span>
+    </div>
+  {/if}
+
+<style>
+  summary {
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+  }
+
+  summary::-webkit-details-marker {
+    display: none;
+  }
+
+  details[open] > summary .collapsed-hint,
+  details[open] > summary .inline-close {
+    display: none;
+  }
+
+  .children {
+    padding-left: var(--gutter);
+    border-left: 1px solid var(--bc, var(--color-border));
+  }
+
+  .bracket {
+    color: var(--bc, var(--color-json-string));
+  }
+
+  .diff-added {
+    background-color: rgba(154, 206, 106, 0.18);
+  }
+
+  .diff-removed {
+    background-color: rgba(247, 118, 142, 0.18);
+  }
+</style>

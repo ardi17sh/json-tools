@@ -6,6 +6,7 @@
 
 	const navItems: { href: string; label: string }[] = [
 		{ href: '/', label: 'JSON Formatter' },
+		{ href: '/diff', label: 'JSON Diff' },
 		{ href: '/type-generator', label: 'Type Generator' }
 	];
 

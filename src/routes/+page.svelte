@@ -3,6 +3,7 @@
   import JsonInput from '$lib/components/JsonInput.svelte';
   import CopyButton from '$lib/components/CopyButton.svelte';
   import { parseJson } from '$lib/jsonParser';
+  import { formatValue } from '$lib/formatValue';
 
   let input = $state('');
   let indent = $state(2);
@@ -29,13 +30,6 @@
 
   const tones = ['#e2c08d', '#7aa2f7', '#bb9af7', '#73daca', '#ff9e64', '#db4b4b'];
 
-  function formatValue(val: unknown): { text: string; cls: string } {
-    if (val === null) return { text: 'null', cls: 'json-null' };
-    if (typeof val === 'boolean') return { text: String(val), cls: 'json-bool' };
-    if (typeof val === 'number') return { text: String(val), cls: 'json-number' };
-    if (typeof val === 'string') return { text: `"${val}"`, cls: 'json-string' };
-    return { text: String(val), cls: '' };
-  }
 </script>
 
 <div class="app">
@@ -204,38 +198,8 @@
     color: var(--bc, var(--color-json-string));
   }
 
-  :global(.collapsed-hint) {
-    color: var(--color-text-dim);
-    font-style: italic;
-    font-size: 0.8rem;
-  }
-
-  :global(.key) {
-    color: var(--color-primary);
-  }
-
-  :global(.colon) {
-    color: var(--color-text-muted);
-  }
-
   :global(.comma) {
     color: var(--color-text-muted);
-  }
-
-  :global(.json-string) {
-    color: var(--color-json-string);
-  }
-
-  :global(.json-number) {
-    color: var(--color-json-number);
-  }
-
-  :global(.json-bool) {
-    color: var(--color-json-bool);
-  }
-
-  :global(.json-null) {
-    color: var(--color-json-null);
   }
 
   @media (max-width: 768px) {
