@@ -41,8 +41,14 @@ describe('parseJson', () => {
     const stringified = JSON.stringify({ name: 'John' });
     const doubleStringified = JSON.stringify(stringified);
     const result = parseJson(doubleStringified);
-    
+
     expect(result.data).toEqual({ name: 'John' });
     expect(result.error).toBe('');
+  });
+
+  it('should tolerate trailing commas', () => {
+    const result = parseJson('{"cache":{"enabled":false},}');
+    expect(result.error).toBe('');
+    expect(result.data).toEqual({ cache: { enabled: false } });
   });
 });

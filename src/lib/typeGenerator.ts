@@ -16,7 +16,7 @@ export interface ExtractOptions extends TypeOptions {
   rootName?: string;
 }
 
-function generateInlineType(
+export function generateType(
   value: unknown,
   options: TypeOptions,
   depth: number = 0
@@ -35,7 +35,7 @@ function generateInlineType(
         ? "unknown[]"
         : "Array<unknown>";
     }
-    const elementType = generateInlineType(value[0], options, depth);
+    const elementType = generateType(value[0], options, depth);
     return options.arraySyntax === "shorthand"
       ? `${elementType}[]`
       : `Array<${elementType}>`;
@@ -46,7 +46,7 @@ function generateInlineType(
     if (entries.length === 0) return "{}";
 
     const properties = entries.map(([key, val]) => {
-      const type = generateInlineType(val, options, depth + 1);
+      const type = generateType(val, options, depth + 1);
       return `${innerIndent}${key}: ${type};`;
     });
 
@@ -54,14 +54,6 @@ function generateInlineType(
   }
 
   throw new Error("Unsupported type");
-}
-
-export function generateType(
-  value: unknown,
-  options: TypeOptions,
-  depth: number = 0
-): string {
-  return generateInlineType(value, options, depth);
 }
 
 export function generateExtractedTypes(
@@ -77,7 +69,7 @@ export function generateExtractedTypes(
     opts: ExtractOptions
   ): string {
     if (val === null || typeof val !== "object") {
-      return generateInlineType(val, opts);
+      return generateType(val, opts);
     }
 
     if (Array.isArray(val)) {
@@ -122,7 +114,7 @@ export function generateExtractedTypes(
             : `Array<${typeName}>`;
         return `${innerIndent}${key}: ${arrayType};`;
       }
-      const type = generateInlineType(v, opts, 1);
+      const type = generateType(v, opts, 1);
       return `${innerIndent}${key}: ${type};`;
     });
 
