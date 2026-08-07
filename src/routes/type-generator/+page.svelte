@@ -7,8 +7,6 @@
   import type { ExtractOptions } from '$lib/typeGenerator';
 
   let input = $state('');
-  let parsed = $state<unknown>(null);
-  let error = $state('');
 
   let typeConstruct = $state<'interface' | 'type'>('interface');
   let arraySyntax = $state<'shorthand' | 'generic'>('shorthand');
@@ -18,22 +16,11 @@
 
   const placeholder = 'Paste JSON here, e.g. {"name": "John", "age": 30}';
 
-  $effect(() => {
-    if (!input.trim()) {
-      parsed = null;
-      error = '';
-      return;
-    }
-
-    const result = parseJson(input);
-    if (result.error) {
-      error = result.error;
-      parsed = null;
-    } else {
-      error = '';
-      parsed = result.data;
-    }
-  });
+  const result = $derived.by(() =>
+    input.trim() ? parseJson(input) : { data: null, error: '' }
+  );
+  const parsed = $derived(result.data);
+  const error = $derived(result.error);
 
   function getOptions(): ExtractOptions {
     return {
@@ -68,8 +55,6 @@
 
   function clearAll() {
     input = '';
-    parsed = null;
-    error = '';
   }
 </script>
 

@@ -2,12 +2,6 @@ import { describe, it, expect } from 'vitest';
 import { generateType, generateExtractedTypes } from './typeGenerator';
 import type { ExtractOptions } from './typeGenerator';
 
-describe('TypeScript Type Generator', () => {
-  it('should pass initial test', () => {
-    expect(true).toBe(true);
-  });
-});
-
 describe('generateType - primitives', () => {
   it('should generate string type', () => {
     const result = generateType('hello', { arraySyntax: 'shorthand', indent: 2 });
