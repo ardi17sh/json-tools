@@ -21,30 +21,15 @@ describe('copyToClipboard', () => {
     expect(result).toBe(true);
   });
 
-  it('should fallback to execCommand when clipboard API fails', async () => {
+  it('should return false when clipboard API fails', async () => {
     vi.stubGlobal('navigator', {
       clipboard: {
         writeText: vi.fn().mockRejectedValue(new Error('Clipboard unavailable'))
       }
     });
 
-    const mockElement = {
-      select: vi.fn(),
-      style: {},
-    };
-
-    vi.stubGlobal('document', {
-      createElement: vi.fn().mockReturnValue(mockElement),
-      body: {
-        appendChild: vi.fn(),
-        removeChild: vi.fn(),
-      },
-      execCommand: vi.fn().mockReturnValue(true),
-    });
-    
     const result = await copyToClipboard('test text');
-    
-    expect(document.execCommand).toHaveBeenCalledWith('copy');
-    expect(result).toBe(true);
+
+    expect(result).toBe(false);
   });
 });
