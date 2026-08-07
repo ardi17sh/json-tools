@@ -18,21 +18,12 @@
     depth = 0,
   }: { node: DiffNodeType; side: "old" | "new"; depth?: number } = $props();
 
-  const isContainer = (val: unknown): boolean =>
-    val !== null && typeof val === "object";
-
   const val = $derived(side === "old" ? node.oldValue : node.newValue);
-  const propCls = $derived.by(() => {
-    if (node.status === "added" && side === "new") return "diff-added";
-    if (node.status === "removed" && side === "old") return "diff-removed";
-    return "";
-  });
-  const statusCls = $derived(
-    propCls || (node.status === "changed" ? (side === "new" ? "diff-added" : "diff-removed") : ""),
-  );
+  const propCls = $derived(node.status === "added" && side === "new" ? "diff-added" : node.status === "removed" && side === "old" ? "diff-removed" : "");
+  const statusCls = $derived(node.status === "changed" ? (side === "new" ? "diff-added" : "diff-removed") : propCls);
 </script>
 
-{#if isContainer(val)}
+{#if val !== null && typeof val === "object"}
   {@const isArr = Array.isArray(val)}
   {@const count = isArr
     ? (val as unknown[]).length
