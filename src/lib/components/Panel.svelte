@@ -12,7 +12,7 @@
 
 <div class="panel">
   <div class="panel-header">
-    <span>{title}</span>
+    <span class="panel-title">{title}</span>
     {#if actions}
       <div class="panel-actions">
         {@render actions()}
