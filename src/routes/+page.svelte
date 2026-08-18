@@ -2,11 +2,18 @@
   import Panel from '$lib/components/Panel.svelte';
   import JsonInput from '$lib/components/JsonInput.svelte';
   import CopyButton from '$lib/components/CopyButton.svelte';
+  import SearchControls from '$lib/components/SearchControls.svelte';
   import { parseJson } from '$lib/jsonParser';
   import { formatValue } from '$lib/formatValue';
+  import { highlightParts } from '$lib/search';
 
   let input = $state('');
   let indent = $state(2);
+  let outputSearch = $state('');
+  let debouncedOutputSearch = $state('');
+  let outputMatchIndex = $state(0);
+  let outputMatchCount = $state(0);
+  let outputElement = $state<HTMLDivElement>();
 
   const result = $derived.by(() =>
     input.trim() ? parseJson(input) : { data: null, error: '' }
@@ -28,8 +35,63 @@
     input = '';
   }
 
-  const tones = ['#e2c08d', '#7aa2f7', '#bb9af7', '#73daca', '#ff9e64', '#db4b4b'];
 
+  function navigateOutput(direction: -1 | 1) {
+    if (!outputMatchCount) return;
+    outputMatchIndex = (outputMatchIndex + direction + outputMatchCount) % outputMatchCount;
+  }
+  function setAllExpanded(open: boolean) {
+    for (const detail of outputElement?.querySelectorAll<HTMLDetailsElement>('details[data-search-path]') ?? []) {
+      detail.open = open;
+    }
+  }
+  $effect(() => {
+    const query = outputSearch;
+    const timeout = setTimeout(() => {
+      debouncedOutputSearch = query;
+      outputMatchIndex = 0;
+    }, 300);
+    return () => clearTimeout(timeout);
+  });
+
+
+
+  function updateOutputSearch() {
+    if (!outputElement) {
+      outputMatchCount = 0;
+      outputMatchIndex = 0;
+      return;
+    }
+    if (!debouncedOutputSearch) {
+      outputMatchCount = 0;
+      outputMatchIndex = 0;
+      return;
+    }
+    const marks = [...outputElement.querySelectorAll<HTMLElement>('.search-highlight')];
+    for (const mark of marks) {
+      for (let parent = mark.parentElement; parent; parent = parent.parentElement) {
+        if (parent instanceof HTMLDetailsElement) parent.open = true;
+      }
+    }
+
+    const visibleMarks = marks.filter((mark) => mark.getClientRects().length > 0);
+    outputMatchCount = visibleMarks.length;
+    if (outputMatchIndex >= outputMatchCount) outputMatchIndex = 0;
+    marks.forEach((mark) => mark.classList.remove('search-highlight-active'));
+    const active = visibleMarks[outputMatchIndex];
+    active?.classList.add('search-highlight-active');
+    active?.scrollIntoView({ block: 'nearest' });
+  }
+
+
+  $effect(() => {
+    parsed;
+    debouncedOutputSearch;
+    outputMatchIndex;
+    updateOutputSearch();
+  });
+
+  const tones = ['#e2c08d', '#7aa2f7', '#bb9af7', '#73daca', '#ff9e64', '#db4b4b'];
 </script>
 
 <div class="app">
@@ -55,13 +117,16 @@
 
     <Panel title="Output">
       {#snippet actions()}
+        <SearchControls bind:query={outputSearch} index={outputMatchIndex} count={outputMatchCount} onprev={() => navigateOutput(-1)} onnext={() => navigateOutput(1)} />
+        <button class="small-btn" type="button" onclick={() => setAllExpanded(true)} disabled={parsed === null}>Expand all</button>
+        <button class="small-btn" type="button" onclick={() => setAllExpanded(false)} disabled={parsed === null}>Collapse all</button>
         <CopyButton text={getOutput()} disabled={parsed === null} />
       {/snippet}
 
       {#if error}
         <div class="error">{error}</div>
       {:else if parsed !== null}
-        <div class="output-area tree">
+        <div class="output-area tree" bind:this={outputElement}>
           {@render JsonNode(parsed)}
         </div>
       {/if}
@@ -69,50 +134,60 @@
   </main>
 </div>
 
-{#snippet JsonNode(value: unknown, label?: string, depth = 0)}
+{#snippet SearchText(text: string)}
+  {#each highlightParts(text, debouncedOutputSearch) as part (part.start)}
+    {#if part.match}
+      <mark class="search-highlight">{part.text}</mark>
+    {:else}
+      {part.text}
+    {/if}
+  {/each}
+{/snippet}
+
+{#snippet JsonNode(value: unknown, label?: string, depth = 0, path = 'root')}
   {#if value !== null && typeof value === 'object'}
     {@const entries = Array.isArray(value) ? (value as unknown[]).map((v, i) => [i, v]) : Object.entries(value as Record<string, unknown>)}
     {@const count = entries.length}
     {@const unit = Array.isArray(value) ? (count === 1 ? 'item' : 'items') : (count === 1 ? 'key' : 'keys')}
     {@const openBracket = Array.isArray(value) ? '[' : '{'}
     {@const closeBracket = Array.isArray(value) ? ']' : '}'}
-    <details class="block" open style:--bc={tones[depth % tones.length]}>
+    <details class="block" open data-search-path={path} style:--bc={tones[depth % tones.length]}>
       <summary class="opener">
         {#if label}
-          <span class="key">{label}</span>
-          <span class="colon">:&nbsp;</span>
+          <span class="key">{@render SearchText(label)}</span>
+          <span class="colon">{@render SearchText(': ')}</span>
         {/if}
-        <span class="bracket">{openBracket}</span>
+        <span class="bracket">{@render SearchText(openBracket)}</span>
         <span class="collapsed-hint">{count} {unit}</span>
-        <span class="inline-close bracket">{closeBracket}</span>
+        <span class="inline-close bracket">{@render SearchText(closeBracket)}</span>
       </summary>
       <div class="children">
         {#each entries as [key, val], i (i)}
           {#if val !== null && typeof val === 'object'}
-            {@render JsonNode(val, Array.isArray(value) ? String(key) : `"${key}"`, depth + 1)}
+            {@render JsonNode(val, Array.isArray(value) ? String(key) : `"${key}"`, depth + 1, `${path}.${i}`)}
           {:else}
             {@const fmt = formatValue(val)}
             <div class="leaf">
-              <span class="key">{Array.isArray(value) ? key : `"${key}"`}</span>
-              <span class="colon">:&nbsp;</span>
-              <span class={fmt.cls}>{fmt.text}</span>
-              <span class="comma">{i < entries.length - 1 ? ',' : ''}</span>
+              <span class="key">{@render SearchText(Array.isArray(value) ? String(key) : `"${key}"`)}</span>
+              <span class="colon">{@render SearchText(': ')}</span>
+              <span class={fmt.cls}>{@render SearchText(fmt.text)}</span>
+              <span class="comma">{@render SearchText(i < entries.length - 1 ? ',' : '')}</span>
             </div>
           {/if}
         {/each}
       </div>
       <div class="closer">
-        <span class="bracket">{closeBracket}</span>
+        <span class="bracket">{@render SearchText(closeBracket)}</span>
       </div>
     </details>
   {:else}
     {@const fmt = formatValue(value)}
     <div class="leaf">
       {#if label}
-        <span class="key">{label}</span>
-        <span class="colon">:&nbsp;</span>
+        <span class="key">{@render SearchText(label)}</span>
+        <span class="colon">{@render SearchText(': ')}</span>
       {/if}
-      <span class={fmt.cls}>{fmt.text}</span>
+      <span class={fmt.cls}>{@render SearchText(fmt.text)}</span>
     </div>
   {/if}
 {/snippet}

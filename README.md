@@ -6,7 +6,9 @@ Built with **SvelteKit 5** and deployed as a static site (~140 KB).
 
 ## Features
 
-- **JSON Formatter** — real-time formatting with a collapsible tree view, configurable indentation (2/4 spaces or tabs), and auto-detection of stringified JSON
+- **JSON Formatter** — real-time formatting with a collapsible tree view, configurable indentation (2/4 spaces or tabs), auto-detection of stringified JSON, and debounced output search
+- **Output search** — case-insensitive matching with 500ms debounce, previous/next navigation, match counts, active-match scrolling, and automatic tree expansion
+- **Expand/collapse controls** — expand or collapse the entire formatted output tree from the panel header
 - **TypeScript Type Generator** — generate inline types or extracted interfaces/types from JSON
 - **JSON Diff** — side-by-side comparison of two JSON inputs, highlighting added, removed, and changed properties and values
 - **Copy to clipboard** — one-click copy
@@ -95,12 +97,16 @@ json-tools/
 │   │   ├── jsonDiff.ts          # JSON diff engine
 │   │   ├── jsonParser.ts        # JSON parser with auto-detect
 │   │   ├── typeGenerator.ts     # TypeScript type generation
-│   │   ├── formatValue.ts       # Shared JSON value formatting
-│   │   └── components/          # Shared Svelte components
+│   │   ├── formatValue.ts        # Shared JSON value formatting
+│   │   ├── search.ts             # Case-insensitive search matching
+│   │   ├── search.test.ts        # Search helper tests
+│   │   └── components/           # Shared Svelte components
+│   │       ├── Panel.svelte
+│   │       └── SearchControls.svelte
 │   ├── styles/
 │   │   └── global.css            # Design tokens and shared styles
-│   ├── app.html                # HTML shell
-│   └── app.d.ts                # SvelteKit type declarations
+│   ├── app.html                  # HTML shell
+│   └── app.d.ts                  # SvelteKit type declarations
 ├── static/                     # Static assets
 ├── Dockerfile                  # nginx-alpine production image
 ├── docker-compose.yml          # Docker Compose config
