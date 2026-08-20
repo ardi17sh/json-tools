@@ -21,48 +21,48 @@
   const parsed = $derived(result.data);
   const error = $derived(result.error);
 
-  function handleIndentChange(e: Event) {
-    indent = Number((e.target as HTMLSelectElement).value);
-  }
-
   function getOutput(): string {
     if (parsed === null) return '';
-    const space = indent === 0 ? '\t' : indent;
-    return JSON.stringify(parsed, null, space);
+    return JSON.stringify(parsed, null, indent === 0 ? '\t' : indent);
+  }
+
+  function formatInput() {
+    if (parsed !== null) input = getOutput();
+  }
+  function handleShortcut(event: KeyboardEvent) {
+    if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+      event.preventDefault();
+      formatInput();
+    }
   }
 
   function clearAll() {
     input = '';
+    outputSearch = '';
   }
-
 
   function navigateOutput(direction: -1 | 1) {
     if (!outputMatchCount) return;
     outputMatchIndex = (outputMatchIndex + direction + outputMatchCount) % outputMatchCount;
   }
+
   function setAllExpanded(open: boolean) {
     for (const detail of outputElement?.querySelectorAll<HTMLDetailsElement>('details[data-search-path]') ?? []) {
       detail.open = open;
     }
   }
+
   $effect(() => {
     const query = outputSearch;
     const timeout = setTimeout(() => {
       debouncedOutputSearch = query;
       outputMatchIndex = 0;
-    }, 300);
+    }, 240);
     return () => clearTimeout(timeout);
   });
 
-
-
   function updateOutputSearch() {
-    if (!outputElement) {
-      outputMatchCount = 0;
-      outputMatchIndex = 0;
-      return;
-    }
-    if (!debouncedOutputSearch) {
+    if (!outputElement || !debouncedOutputSearch) {
       outputMatchCount = 0;
       outputMatchIndex = 0;
       return;
@@ -73,7 +73,6 @@
         if (parent instanceof HTMLDetailsElement) parent.open = true;
       }
     }
-
     const visibleMarks = marks.filter((mark) => mark.getClientRects().length > 0);
     outputMatchCount = visibleMarks.length;
     if (outputMatchIndex >= outputMatchCount) outputMatchIndex = 0;
@@ -83,7 +82,6 @@
     active?.scrollIntoView({ block: 'nearest' });
   }
 
-
   $effect(() => {
     parsed;
     debouncedOutputSearch;
@@ -91,43 +89,65 @@
     updateOutputSearch();
   });
 
-  const tones = ['#e2c08d', '#7aa2f7', '#bb9af7', '#73daca', '#ff9e64', '#db4b4b'];
+  const tones = ['#f2c879', '#8ab4ff', '#c9a7ff', '#7ed6a5', '#f8b26a', '#f38ba8'];
 </script>
 
-<div class="app">
-  <header>
-    <h1>JSON Formatter</h1>
-    <div class="controls">
-      <label>
-        Indent:
-        <select value={indent} onchange={handleIndentChange}>
-          <option value={2}>2 spaces</option>
-          <option value={4}>4 spaces</option>
-          <option value={0}>Tab (\t)</option>
-        </select>
-      </label>
-      <button onclick={clearAll}>Clear</button>
+<svelte:head>
+  <title>JSON Formatter — JSON Tools</title>
+</svelte:head>
+<svelte:window onkeydown={handleShortcut} />
+
+<div class="page formatter-page">
+  <header class="page-header">
+    <div>
+      <div class="eyebrow">Formatter / JSON</div>
+      <h1>Format JSON without leaving your editor</h1>
+      <p class="page-description">Paste raw JSON, choose your indentation, and get a readable structure instantly. Everything runs locally in your browser.</p>
     </div>
+    <div class="header-meta"><span class="privacy-pill">● No uploads · no tracking</span></div>
   </header>
 
-  <main>
+  <div class="toolbar" aria-label="Formatter controls">
+    <label class="control-label">Indent
+      <select bind:value={indent} aria-label="Indentation">
+        <option value={2}>2 spaces</option>
+        <option value={4}>4 spaces</option>
+        <option value={0}>Tab (\t)</option>
+      </select>
+    </label>
+    <button class="primary" type="button" onclick={formatInput} disabled={parsed === null}>Format JSON <kbd>⌘↵</kbd></button>
+    <button type="button" onclick={clearAll} disabled={!input}>Clear</button>
+    <span class="toolbar-spacer"></span>
+    <span class="toolbar-note">Output updates as you type</span>
+  </div>
+
+  <main class="editor-grid">
     <Panel title="Input">
-      <JsonInput bind:value={input} placeholder="Paste your JSON here..." />
+      {#snippet actions()}
+        <span class="panel-meta">{input ? `${input.split('\n').length} lines` : 'Waiting for JSON'}</span>
+      {/snippet}
+      <JsonInput bind:value={input} placeholder={'Paste JSON here...\n\nExample:\n{"name":"Ada","active":true}'} />
+      {#if error}<div class="error" role="alert">{error}</div>{/if}
     </Panel>
 
-    <Panel title="Output">
+    <Panel title="Formatted output">
       {#snippet actions()}
         <SearchControls bind:query={outputSearch} index={outputMatchIndex} count={outputMatchCount} onprev={() => navigateOutput(-1)} onnext={() => navigateOutput(1)} />
         <button class="small-btn" type="button" onclick={() => setAllExpanded(true)} disabled={parsed === null}>Expand all</button>
-        <button class="small-btn" type="button" onclick={() => setAllExpanded(false)} disabled={parsed === null}>Collapse all</button>
+        <button class="small-btn" type="button" onclick={() => setAllExpanded(false)} disabled={parsed === null}>Collapse</button>
         <CopyButton text={getOutput()} disabled={parsed === null} />
       {/snippet}
 
       {#if error}
-        <div class="error">{error}</div>
+        <div class="error" role="alert">Fix the input above to preview formatted JSON.</div>
       {:else if parsed !== null}
         <div class="output-area tree" bind:this={outputElement}>
           {@render JsonNode(parsed)}
+        </div>
+      {:else}
+        <div class="empty-state">
+          <div class="empty-mark" aria-hidden="true">&#123;&#125;</div>
+          <div><strong>Your formatted JSON appears here</strong><p>Paste an object or array into the input panel to get started.</p></div>
         </div>
       {/if}
     </Panel>
@@ -136,11 +156,7 @@
 
 {#snippet SearchText(text: string)}
   {#each highlightParts(text, debouncedOutputSearch) as part (part.start)}
-    {#if part.match}
-      <mark class="search-highlight">{part.text}</mark>
-    {:else}
-      {part.text}
-    {/if}
+    {#if part.match}<mark class="search-highlight">{part.text}</mark>{:else}{part.text}{/if}
   {/each}
 {/snippet}
 
@@ -153,13 +169,8 @@
     {@const closeBracket = Array.isArray(value) ? ']' : '}'}
     <details class="block" open data-search-path={path} style:--bc={tones[depth % tones.length]}>
       <summary class="opener">
-        {#if label}
-          <span class="key">{@render SearchText(label)}</span>
-          <span class="colon">{@render SearchText(': ')}</span>
-        {/if}
-        <span class="bracket">{@render SearchText(openBracket)}</span>
-        <span class="collapsed-hint">{count} {unit}</span>
-        <span class="inline-close bracket">{@render SearchText(closeBracket)}</span>
+        {#if label}<span class="key">{@render SearchText(label)}</span><span class="colon">{@render SearchText(': ')}</span>{/if}
+        <span class="bracket">{@render SearchText(openBracket)}</span><span class="collapsed-hint">{count} {unit}</span><span class="inline-close bracket">{@render SearchText(closeBracket)}</span>
       </summary>
       <div class="children">
         {#each entries as [key, val], i (i)}
@@ -167,124 +178,23 @@
             {@render JsonNode(val, Array.isArray(value) ? String(key) : `"${key}"`, depth + 1, `${path}.${i}`)}
           {:else}
             {@const fmt = formatValue(val)}
-            <div class="leaf">
-              <span class="key">{@render SearchText(Array.isArray(value) ? String(key) : `"${key}"`)}</span>
-              <span class="colon">{@render SearchText(': ')}</span>
-              <span class={fmt.cls}>{@render SearchText(fmt.text)}</span>
-              <span class="comma">{@render SearchText(i < entries.length - 1 ? ',' : '')}</span>
-            </div>
+            <div class="leaf"><span class="key">{@render SearchText(Array.isArray(value) ? String(key) : `"${key}"`)}</span><span class="colon">{@render SearchText(': ')}</span><span class={fmt.cls}>{@render SearchText(fmt.text)}</span><span class="comma">{@render SearchText(i < entries.length - 1 ? ',' : '')}</span></div>
           {/if}
         {/each}
       </div>
-      <div class="closer">
-        <span class="bracket">{@render SearchText(closeBracket)}</span>
-      </div>
+      <div class="closer"><span class="bracket">{@render SearchText(closeBracket)}</span></div>
     </details>
   {:else}
     {@const fmt = formatValue(value)}
-    <div class="leaf">
-      {#if label}
-        <span class="key">{@render SearchText(label)}</span>
-        <span class="colon">{@render SearchText(': ')}</span>
-      {/if}
-      <span class={fmt.cls}>{@render SearchText(fmt.text)}</span>
-    </div>
+    <div class="leaf">{#if label}<span class="key">{@render SearchText(label)}</span><span class="colon">{@render SearchText(': ')}</span>{/if}<span class={fmt.cls}>{@render SearchText(fmt.text)}</span></div>
   {/if}
 {/snippet}
 
 <style>
-  .app {
-    width: 100%;
-    padding: var(--spacing-md) var(--spacing-lg);
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-  }
-
-  header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: var(--spacing-lg);
-    flex-wrap: wrap;
-    gap: var(--spacing-md);
-  }
-
-  h1 {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: var(--color-primary);
-  }
-
-  .controls {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-md);
-    flex-wrap: wrap;
-  }
-
-  main {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--spacing-md);
-    flex: 1;
-    min-height: 0;
-  }
-
-  :global(.tree) {
-    white-space: nowrap;
-  }
-
-  :global(.block) {
-    display: block;
-  }
-
-  :root {
-    --gutter: 1.5rem;
-  }
-
-  :global(.opener),
-  :global(.leaf) {
-    display: flex;
-    align-items: baseline;
-  }
-
-  :global(summary) {
-    cursor: pointer;
-    list-style: none;
-    user-select: none;
-  }
-
-  :global(summary::-webkit-details-marker) {
-    display: none;
-  }
-
-  :global(details[open] > summary .collapsed-hint),
-  :global(details[open] > summary .inline-close) {
-    display: none;
-  }
-
-  :global(.children) {
-    padding-left: var(--gutter);
-    border-left: 1px solid var(--bc, var(--color-border));
-  }
-
-  :global(.bracket) {
-    color: var(--bc, var(--color-json-string));
-  }
-
-  :global(.comma) {
-    color: var(--color-text-muted);
-  }
-
-  @media (max-width: 768px) {
-    main {
-      grid-template-columns: 1fr;
-    }
-
-    header {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-  }
+  .formatter-page :global(.panel) { min-height: 0; }
+  .header-meta { align-self: flex-start; }
+  .privacy-pill, .toolbar-note, .panel-meta { color: var(--color-text-dim); font-family: var(--font-mono); font-size: 0.66rem; }
+  .privacy-pill { white-space: nowrap; }
+  .privacy-pill::first-letter { color: var(--color-success); }
+  @media (max-width: 800px) { .header-meta { display: none; } }
 </style>
