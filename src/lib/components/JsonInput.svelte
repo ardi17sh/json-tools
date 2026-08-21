@@ -7,9 +7,12 @@
   let { value = $bindable(''), placeholder = '' }: Props = $props();
 </script>
 
-<textarea
-  class="input-area"
-  bind:value
-  {placeholder}
-  spellcheck="false"
-></textarea>
+<div class="editor-shell">
+  <textarea
+    class="input-area"
+    bind:value
+    {placeholder}
+    spellcheck="false"
+    aria-label="JSON input"
+  ></textarea>
+</div>

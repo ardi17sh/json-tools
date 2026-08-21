@@ -4,12 +4,12 @@
   import { formatValue } from "$lib/formatValue";
 
   const tones = [
-    "#e2c08d",
-    "#7aa2f7",
-    "#bb9af7",
-    "#73daca",
-    "#ff9e64",
-    "#db4b4b",
+    '#f2c879',
+    '#8ab4ff',
+    '#c9a7ff',
+    '#7ed6a5',
+    '#f8b26a',
+    '#f38ba8',
   ];
 
   let {
