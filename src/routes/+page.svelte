@@ -115,7 +115,7 @@
         <option value={0}>Tab (\t)</option>
       </select>
     </label>
-    <button class="primary" type="button" onclick={formatInput} disabled={parsed === null}>Format JSON <kbd>⌘↵</kbd></button>
+    <button class="primary" type="button" onclick={formatInput} disabled={parsed === null}>Format JSON</button>
     <button type="button" onclick={clearAll} disabled={!input}>Clear</button>
     <span class="toolbar-spacer"></span>
     <span class="toolbar-note">Output updates as you type</span>

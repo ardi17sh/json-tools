@@ -5,10 +5,10 @@
 
   let { children }: { children: Snippet } = $props();
 
-  const navItems: { href: string; label: string; shortcut: string }[] = [
-    { href: '/', label: 'Formatter', shortcut: '⌘1' },
-    { href: '/diff', label: 'Diff', shortcut: '⌘2' },
-    { href: '/type-generator', label: 'Types', shortcut: '⌘3' }
+  const navItems: { href: string; label: string }[] = [
+    { href: '/', label: 'Formatter' },
+    { href: '/diff', label: 'Diff' },
+    { href: '/type-generator', label: 'Types' }
   ];
 
   function handleShortcut(event: KeyboardEvent) {
@@ -36,7 +36,6 @@
       {#each navItems as item}
         <a href={item.href} class:active={$page.url.pathname === item.href} class="nav-link">
           <span>{item.label}</span>
-          <kbd>{item.shortcut}</kbd>
         </a>
       {/each}
     </div>
@@ -128,14 +127,6 @@
     border-bottom-color: var(--color-primary);
   }
 
-  .nav-link kbd {
-    color: var(--color-text-dim);
-    border-color: transparent;
-    background: transparent;
-    padding: 0;
-    font-size: 0.62rem;
-  }
-
   .nav-meta {
     display: flex;
     align-items: center;
@@ -175,7 +166,6 @@
       padding-inline: 0.55rem;
     }
 
-    .nav-link kbd,
     .nav-meta {
       display: none;
     }
