@@ -320,27 +320,9 @@ h1 {
 }
 
 .editor-shell {
-  display: grid;
-  grid-template-columns: 3.25rem minmax(0, 1fr);
+  display: flex;
   flex: 1;
   min-height: 0;
-  background: linear-gradient(90deg, rgba(23, 28, 38, 0.48), transparent 3.25rem);
-}
-
-.line-numbers {
-  padding-top: 1rem;
-  color: #455267;
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  line-height: 1.7;
-  text-align: right;
-  user-select: none;
-  pointer-events: none;
-}
-
-.line-numbers span {
-  display: block;
-  padding-right: 0.65rem;
 }
 
 .output-area {
