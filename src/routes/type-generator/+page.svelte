@@ -3,7 +3,7 @@
   import JsonInput from '$lib/components/JsonInput.svelte';
   import CopyButton from '$lib/components/CopyButton.svelte';
   import { parseJson } from '$lib/jsonParser';
-  import { generateType, generateExtractedTypes } from '$lib/typeGenerator';
+  import { generateType, generateExtractedTypes, normalizeTypeName } from '$lib/typeGenerator';
   import type { ExtractOptions } from '$lib/typeGenerator';
 
   let input = $state('');
@@ -19,7 +19,7 @@
   const error = $derived(result.error);
 
   function getOptions(): ExtractOptions {
-    return { typeConstruct, arraySyntax, rootName: rootName.trim() || 'Root', indent };
+    return { typeConstruct, arraySyntax, rootName: normalizeTypeName(rootName), indent };
   }
 
   function getOutput(): string {
@@ -29,8 +29,8 @@
       if (extractNested) return generateExtractedTypes(parsed, options);
       const inlineType = generateType(parsed, options);
       return options.typeConstruct === 'type'
-        ? `type ${options.rootName} = ${inlineType}`
-        : inlineType.startsWith('{') ? `interface ${options.rootName} ${inlineType}` : `type ${options.rootName} = ${inlineType}`;
+        ? `type ${normalizeTypeName(options.rootName || 'Root')} = ${inlineType}`
+        : inlineType.startsWith('{') ? `interface ${normalizeTypeName(options.rootName || 'Root')} ${inlineType}` : `type ${normalizeTypeName(options.rootName || 'Root')} = ${inlineType}`;
     } catch { return ''; }
   }
 

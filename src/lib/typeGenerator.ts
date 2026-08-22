@@ -1,6 +1,17 @@
 function toTypeName(key: string): string {
-  const cleaned = key.replace(/[^a-zA-Z0-9]/g, "");
-  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+  const cleaned = key.replace(/[^a-zA-Z0-9_$]/g, '');
+  const safe = /^[a-zA-Z_$]/.test(cleaned) ? cleaned : `Type${cleaned}`;
+  const name = safe || 'Type';
+  return name.charAt(0).toUpperCase() + name.slice(1);
+}
+
+function propertyName(key: string): string {
+  return /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(key) ? key : JSON.stringify(key);
+}
+
+export function normalizeTypeName(name: string): string {
+  const trimmed = name.trim();
+  return /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(trimmed) ? trimmed : 'Root';
 }
 
 function arrayType(element: string, syntax: TypeOptions["arraySyntax"]): string {
@@ -44,7 +55,7 @@ export function generateType(
 
     const properties = entries.map(([key, val]) => {
       const type = generateType(val, options, depth + 1);
-      return `${innerIndent}${key}: ${type};`;
+      return `${innerIndent}${propertyName(key)}: ${type};`;
     });
 
     return `{\n${properties.join("\n")}\n${indent}}`;
@@ -90,7 +101,7 @@ export function generateExtractedTypes(
       ) {
         const typeName = toTypeName(key);
         extract(v, typeName, opts);
-        return `${innerIndent}${key}: ${typeName};`;
+        return `${innerIndent}${propertyName(key)}: ${typeName};`;
       }
       if (
         Array.isArray(v) &&
@@ -101,10 +112,10 @@ export function generateExtractedTypes(
       ) {
         const typeName = toTypeName(key) + "Item";
         extract(v[0], typeName, opts);
-        return `${innerIndent}${key}: ${arrayType(typeName, opts.arraySyntax)};`;
+        return `${innerIndent}${propertyName(key)}: ${arrayType(typeName, opts.arraySyntax)};`;
       }
       const type = generateType(v, opts, 1);
-      return `${innerIndent}${key}: ${type};`;
+      return `${innerIndent}${propertyName(key)}: ${type};`;
     });
 
     const body = properties.join("\n");
@@ -118,8 +129,7 @@ export function generateExtractedTypes(
     return name;
   }
 
-  const rootName = options.rootName || "Root";
+  const rootName = normalizeTypeName(options.rootName || 'Root');
   extract(value, rootName, options);
-
   return interfaces.join("\n\n");
 }

