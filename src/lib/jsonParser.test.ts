@@ -51,4 +51,23 @@ describe('parseJson', () => {
     expect(result.error).toBe('');
     expect(result.data).toEqual({ cache: { enabled: false } });
   });
+
+  it('rejects excessively nested JSON', () => {
+    const result = parseJson(`${'{'.repeat(1_001)}0${'}'.repeat(1_001)}`);
+    expect(result.data).toBeNull();
+    expect(result.error).toContain('too deep');
+  });
+
+  it('rejects deeply nested stringified JSON', () => {
+    const nested = `${'{'.repeat(1_001)}0${'}'.repeat(1_001)}`;
+    const result = parseJson(JSON.stringify(nested));
+    expect(result.data).toBeNull();
+    expect(result.error).toContain('too deep');
+  });
+
+  it('rejects oversized JSON', () => {
+    const result = parseJson(`"${'x'.repeat(1_000_000)}"`);
+    expect(result.data).toBeNull();
+    expect(result.error).toContain('too large');
+  });
 });

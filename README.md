@@ -19,17 +19,16 @@ Built with **SvelteKit 5** and deployed as a static site (~140 KB).
 
 ## Prerequisites
 
-- **Node.js** 18+
-- **npm** 9+
+- **pnpm** 11+
 
 ## Getting Started
 
 ```bash
 # Install dependencies
-npm install
+pnpm install
 
 # Start the dev server
-npm run dev
+pnpm run dev
 ```
 
 Open the URL shown in the terminal (typically `http://localhost:5173`).
@@ -38,18 +37,18 @@ Open the URL shown in the terminal (typically `http://localhost:5173`).
 
 | Command               | Description                                      |
 | --------------------- | ------------------------------------------------ |
-| `npm run dev`         | Start the Vite dev server with HMR               |
-| `npm run build`       | Build the static site to `build/`                |
-| `npm run preview`     | Preview the production build locally             |
-| `npm run check`       | Run `svelte-check` for type and lint diagnostics |
-| `npm run check:watch` | Same as above, in watch mode                     |
-| `npm test`            | Run the test suite (Vitest)                      |
-| `npm run test:watch`  | Run tests in watch mode                          |
+| `pnpm run dev` | Start the Vite dev server with HMR               |
+| `pnpm run build` | Build the static site to `build/`                |
+| `pnpm run preview` | Preview the production build locally             |
+| `pnpm run check` | Run `svelte-check` for type and lint diagnostics |
+| `pnpm run check:watch` | Same as above, in watch mode                     |
+| `pnpm test` | Run the test suite (Vitest)                      |
+| `pnpm run test:watch` | Run tests in watch mode                          |
 
 ## Building for Production
 
 ```bash
-npm run build
+pnpm run build
 ```
 
 The static site is output to the `build/` directory. Serve it with any static file host.
@@ -60,7 +59,7 @@ Build and run with Docker Compose:
 
 ```bash
 # Build the static site first, then start the container
-npm run build
+pnpm run build
 docker compose up --build
 ```
 
