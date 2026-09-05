@@ -87,8 +87,9 @@
     user-select: none;
   }
 
-  summary::-webkit-details-marker {
-    display: none;
+  summary::-webkit-details-marker,
+  summary::marker {
+    content: none;
   }
 
   details[open] > summary .collapsed-hint,
