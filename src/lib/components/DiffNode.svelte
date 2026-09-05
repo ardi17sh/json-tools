@@ -33,15 +33,10 @@
   {@const visible = (node.children ?? []).filter((c) =>
     side === "old" ? c.status !== "added" : c.status !== "removed",
   )}
+  {@const order = new Map<string, number>(Object.keys(val as Record<string, unknown>).map((key, index): [string, number] => [key, index]))}
   {@const ordered = isArr
     ? visible
-    : visible
-        .slice()
-        .sort(
-          (a, b) =>
-            Object.keys(val as Record<string, unknown>).indexOf(a.key) -
-            Object.keys(val as Record<string, unknown>).indexOf(b.key),
-        )}
+    : visible.slice().sort((a, b) => (order.get(a.key) ?? Infinity) - (order.get(b.key) ?? Infinity))}
   <details class="block" open style:--bc={tones[depth % tones.length]}>
       <summary class="opener {propCls}">
         {#if node.key !== "root"}
@@ -66,6 +61,7 @@
           <DiffNode node={child} {side} depth={depth + 1} />
         {/each}
       </div>
+        {#if node.truncated}<div class="truncated" role="note">Diff output truncated for safety.</div>{/if}
       <div class="closer">
         <span class="bracket">{close}</span>
       </div>
@@ -77,6 +73,7 @@
         <span class="colon">:&nbsp;</span>
       {/if}
       <span class={formatValue(val).cls}>{formatValue(val).text}</span>
+      {#if node.truncated}<span class="truncated" role="note"> Diff output truncated for safety.</span>{/if}
     </div>
   {/if}
 
@@ -111,5 +108,10 @@
 
   .diff-removed {
     background-color: rgba(247, 118, 142, 0.18);
+  }
+  .truncated {
+    padding: 0.3rem 0;
+    color: var(--color-text-dim);
+    font-style: italic;
   }
 </style>

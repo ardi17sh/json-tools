@@ -70,4 +70,10 @@ describe('parseJson', () => {
     expect(result.data).toBeNull();
     expect(result.error).toContain('too large');
   });
+
+  it('rejects JSON with too many structural values', () => {
+    const result = parseJson(JSON.stringify(Array.from({ length: 20_000 }, () => 0)));
+    expect(result.data).toBeNull();
+    expect(result.error).toContain('too many values');
+  });
 });

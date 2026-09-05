@@ -156,7 +156,7 @@
 
 {#snippet SearchText(text: string)}
   {#each highlightParts(text, debouncedOutputSearch) as part (part.start)}
-    {#if part.match}<mark class="search-highlight">{part.text}</mark>{:else}{part.text}{/if}
+    {#if part.match}<mark class="search-highlight">{part.text}</mark>{:else}{part.text}{#if part.truncated}<span class="search-truncated" role="note"> … more matches hidden</span>{/if}{/if}
   {/each}
 {/snippet}
 

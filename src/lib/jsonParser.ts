@@ -1,5 +1,6 @@
 const MAX_INPUT_LENGTH = 1_000_000;
 const MAX_JSON_DEPTH = 1_000;
+const MAX_JSON_NODES = 20_000;
 const MAX_STRINGIFIED_DEPTH = 100;
 
 function exceedsDepth(input: string): boolean {
@@ -21,6 +22,27 @@ function exceedsDepth(input: string): boolean {
       if (depth > MAX_JSON_DEPTH) return true;
     } else if (char === '}' || char === ']') {
       depth -= 1;
+    }
+  }
+
+  return false;
+}
+
+function exceedsNodeLimit(value: unknown): boolean {
+  const pending: unknown[] = [value];
+  let nodes = 0;
+
+  while (pending.length) {
+    const current = pending.pop();
+    nodes += 1;
+    if (nodes > MAX_JSON_NODES) return true;
+
+    if (Array.isArray(current)) {
+      for (const item of current) pending.push(item);
+    } else if (current !== null && typeof current === 'object') {
+      for (const key of Object.keys(current)) {
+        pending.push((current as Record<string, unknown>)[key]);
+      }
     }
   }
 
@@ -60,6 +82,10 @@ export function parseJson(input: string): { data: unknown | null; error: string 
       } catch {
         break;
       }
+    }
+
+    if (exceedsNodeLimit(parsed)) {
+      return { data: null, error: 'JSON contains too many values (maximum 20,000).' };
     }
 
     return { data: parsed, error: '' };

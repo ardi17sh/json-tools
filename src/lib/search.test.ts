@@ -21,7 +21,15 @@ describe('findMatches', () => {
   it('treats special characters as literal text', () => {
     expect(findMatches('a+b [x]', '+b [')).toEqual([{ start: 1, end: 5 }]);
   });
+  it('caps matches and marks truncated highlights', () => {
+    const text = 'a'.repeat(1_001);
+    const parts = highlightParts(text, 'a');
+
+    expect(findMatches(text, 'a')).toHaveLength(1_000);
+    expect(parts[parts.length - 1].truncated).toBe(true);
+  });
 });
+
 
 describe('highlightParts', () => {
   it('splits matching and non-matching text', () => {

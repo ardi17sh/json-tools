@@ -7,10 +7,10 @@ Built with **SvelteKit 5** and deployed as a static site (~140 KB).
 ## Features
 
 - **JSON Formatter** — real-time formatting with a collapsible tree view, configurable indentation (2/4 spaces or tabs), auto-detection of stringified JSON, and debounced output search
-- **Output search** — case-insensitive matching with 500ms debounce, previous/next navigation, match counts, active-match scrolling, and automatic tree expansion
+- **Output search** — case-insensitive matching with 500ms debounce, previous/next navigation, match counts, active-match scrolling, automatic tree expansion, and a 1,000-match display cap
 - **Expand/collapse controls** — expand or collapse the entire formatted output tree from the panel header
 - **TypeScript Type Generator** — generate inline types or extracted interfaces/types from JSON
-- **JSON Diff** — side-by-side comparison of two JSON inputs, highlighting added, removed, and changed properties and values
+- **JSON Diff** — side-by-side comparison of two JSON inputs, highlighting added, removed, and changed properties and values, with a structural output cap for safety
 - **Copy to clipboard** — one-click copy
 - **Syntax highlighting** — color-coded strings, numbers, booleans, and null values
 - **Error reporting** — inline JSON parse errors with messages
@@ -58,14 +58,7 @@ The static site is output to the `build/` directory. Serve it with any static fi
 Build and run with Docker Compose:
 
 ```bash
-# Build the static site first, then start the container
-pnpm run build
-docker compose up --build
-```
-
-Or build everything inside Docker (requires the `build/` directory to exist):
-
-```bash
+# Build the app and start nginx
 docker compose up --build
 ```
 
