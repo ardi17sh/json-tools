@@ -409,22 +409,12 @@ h1 {
 }
 
 .opener::-webkit-details-marker,
-summary::-webkit-details-marker {
-  display: none;
+.opener::marker,
+summary::-webkit-details-marker,
+summary::marker {
+  content: none;
 }
 
-.opener::before {
-  content: '⌄';
-  display: inline-block;
-  width: 1rem;
-  color: var(--color-text-dim);
-  font-size: 0.72rem;
-  transition: transform 120ms ease;
-}
-
-details:not([open]) > .opener::before {
-  transform: rotate(-90deg);
-}
 
 details[open] > .opener .collapsed-hint,
 details[open] > .opener .inline-close {
