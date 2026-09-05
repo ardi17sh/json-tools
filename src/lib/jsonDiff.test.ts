@@ -53,4 +53,15 @@ describe('diffJson', () => {
     const user = result.children?.find((c) => c.key === 'user');
     expect(user?.status).toBe('changed');
   });
+
+  it('truncates diffs that exceed the structural budget', () => {
+    const left = Array.from({ length: 20_000 }, (_, index) => index);
+    const right = [...left];
+    right[0] = -1;
+
+    const result = diffJson(left, right);
+
+    expect(result.status).toBe('changed');
+    expect(result.truncated).toBe(true);
+  });
 });
